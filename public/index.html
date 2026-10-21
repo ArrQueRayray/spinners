@@ -10,53 +10,98 @@ body {
     background-color: black;
 }
 canvas {
-    border: 1px solid #d3d3d3;
+    border: 6px dashed #800;
     background-color: #000000;
 }
 </style>
 </head>
 <body onload="startGame()">
 <script>
+// Note: I'm much more used to working with a coordinate system where the middle
+// of the canvas is the origin. For all intents and purposes, the top-left corner
+// in all user-defined functions is (-480, 360) rather than (0, 0).
 
 var myGamePiece;
 
 function startGame() {
-    myGamePiece = new component(30, 30, "red", 10, 120);
+    myGamePiece = new spinner(482, 24, "red", 0, 0);
     myGameArea.start();
 }
 
 var myGameArea = {
     canvas : document.createElement("canvas"),
     start : function() {
-        this.canvas.width = 640;
-        this.canvas.height = 640;
-        this.canvas.style = "position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; margin: auto; border:2px solid blue";
+        this.canvas.width = 960;
+        this.canvas.height = 720;
+        this.canvas.style = "position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; margin: auto;";
         this.context = this.canvas.getContext("2d");
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-        this.interval = setInterval(updateGameArea, 20);
+        this.interval = setInterval(updateGameArea, 16.6667);
     },
     clear : function() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 }
 
-function component(width, height, color, x, y) {
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;    
-    this.update = function(){
-        ctx = myGameArea.context;
-        ctx.fillStyle = color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+function spinner(width, height, color, x, y) {
+  this.width = width;
+  this.height = height;
+  this.angle = 0;
+  this.x = x;
+  this.y = y;    
+  this.update = function() {
+    ctx = myGameArea.context;
+    ctx.save();
+    ctx.translate(this.x + 480, 360 - this.y);        
+    ctx.rotate(this.angle);
+    ctx.fillStyle = color;
+    ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+    ctx.restore();    
+  }
+}
+
+function centerFillRect(ctx, x, y, width, height) {
+    ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
+}
+
+function centerFillCirc(ctx, x, y, radius) {
+    ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+function circRectCollision(circ, rect) {
+    // TODO: Implement by:
+    // 1. Unrotate circle by negative angle of rectangle
+    // 2. Finding closest point on rectangle to center of circle
+    // 3. Compare point distance to circle radius
+}
+
+function circRectOverlap(circ, rect) {
+    // TODO: Implement by: 
+    // 1. subtract radius * (2 + sqrt(2)) from rect width and height
+    // 2. circRectCollision(circ, newRect)
+}
+
+function circCircOverlap(innerCirc, outerCirc) {
+    // TODO: Implement by:
+    // 1. Compare center distance to outer radii - inner radii
 }
 
 function updateGameArea() {
     myGameArea.clear();
-    myGamePiece.x += 1;
+    ctx = myGameArea.context;
+    
+    ctx.beginPath();
+    ctx.fillStyle = "red";
+    centerFillRect(ctx, 0, 0, 960, 720);
+    ctx.beginPath();
+  	ctx.fillStyle = "black";
+    centerFillCirc(ctx, 0, 0, 240);
+    
+    myGamePiece.angle += 1 * Math.PI / 180;    
     myGamePiece.update();
 }
+
 </script>
 </body>
 </html>
