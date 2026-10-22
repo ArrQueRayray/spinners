@@ -21,14 +21,28 @@ canvas {
 // of the canvas is the origin. For all intents and purposes, the top-left corner
 // in all user-defined functions is (-480, 360) rather than (0, 0).
 
-var myGamePiece;
+var redBG;
+var obstacles;
+var player;
+var safeArea;
+var goal;
+let timerStart = Date.now() / 1000;
+var timer = 0;
 
 function startGame() {
-    myGamePiece = new spinner(482, 24, "red", 0, 0);
-    myGameArea.start();
+    redBG = new rect(960, 720);
+    redBG.color = "red";
+    
+    obstacles = [new spinRect(482, 24, 1), new spinRect(482, 24, 1, 0, 0, 90)];
+    player = new circ(20, -300, 0, "cyan");
+    safeArea = [new circ(240), new rect(180, 180, -270, 0), new rect(180, 180, 270, 0)];
+
+    goal = [new spinRect(36, 36, 2, 300, 0, 0, "green"), new spinRect(36, 36, 2, 300, 0, 45, "lime")];
+
+    gameArea.start();
 }
 
-var myGameArea = {
+var gameArea = {
     canvas : document.createElement("canvas"),
     start : function() {
         this.canvas.width = 960;
@@ -43,25 +57,60 @@ var myGameArea = {
     }
 }
 
-function spinner(width, height, color, x, y) {
-  this.width = width;
-  this.height = height;
-  this.angle = 0;
-  this.x = x;
-  this.y = y;    
-  this.update = function() {
-    ctx = myGameArea.context;
-    ctx.save();
-    ctx.translate(this.x + 480, 360 - this.y);        
-    ctx.rotate(this.angle);
-    ctx.fillStyle = color;
-    ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
-    ctx.restore();    
-  }
+function rect(width=100, height=100, x=0, y=0, angle=0, color="black") {
+    this.shape = "rect";
+    this.width = width;
+    this.height = height;
+    this.angle = angle * Math.PI / 180;
+    this.x = x;
+    this.y = y;  
+    this.color = color;
+    this.update = function() {
+        ctx = gameArea.context;  
+        ctx.save();
+        ctx.translate(this.x + 480, 360 - this.y);        
+        ctx.rotate(this.angle);
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+        ctx.restore();    
+    }
 }
 
-function centerFillRect(ctx, x, y, width, height) {
-    ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
+function spinRect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
+    this.shape = "rect";
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
+    this.angle = angle * Math.PI / 180;
+    this.x = x;
+    this.y = y; 
+    this.color = color;
+    this.update = function() {
+        this.angle += this.speed * Math.PI / 180;
+        ctx = gameArea.context;  
+        ctx.save();
+        ctx.translate(this.x + 480, 360 - this.y);        
+        ctx.rotate(this.angle);
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+        ctx.restore();    
+    }
+}
+
+function circ(radius=40, x=0, y=0, color="black") {
+    this.shape = "circ";
+    this.radius = radius;
+    this.x = x;
+    this.y = y;    
+    this.color = color;
+    this.update = function() {
+        ctx = gameArea.context;
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        centerFillCirc(ctx, this.x, this.y, this.radius);
+    }
 }
 
 function centerFillCirc(ctx, x, y, radius) {
@@ -88,19 +137,42 @@ function circCircOverlap(innerCirc, outerCirc) {
 }
 
 function updateGameArea() {
-    myGameArea.clear();
-    ctx = myGameArea.context;
+    gameArea.clear();
+    timer = Date.now() / 1000 - timerStart;
+    ctx = gameArea.context;
     
     ctx.beginPath();
-    ctx.fillStyle = "red";
-    centerFillRect(ctx, 0, 0, 960, 720);
+    redBG.update();
+
     ctx.beginPath();
-  	ctx.fillStyle = "black";
-    centerFillCirc(ctx, 0, 0, 240);
-    
-    myGamePiece.angle += 1 * Math.PI / 180;    
-    myGamePiece.update();
+    safeArea.forEach(element => {
+        element.update();
+    });
+
+    ctx.beginPath(); 
+    obstacles.forEach(element => {
+        element.update();
+    });
+
+    ctx.beginPath();
+    goal[0].width = 36 + 6 * Math.sin(timer * Math.PI * 2);
+    goal[0].height = goal[0].width;
+    goal[0].update();
+    goal[1].width = 36 + 6 * Math.cos(timer * Math.PI * 2);
+    goal[1].height = goal[1].width;
+    goal[1].update();
+
+    ctx.beginPath(); 
+    player.update();
+
+    // ctx.fillText("Time: " + timer, 40, 40);
 }
+
+function test(variable) {
+    this.variable = variable; 
+}
+
+test(1);
 
 </script>
 </body>
