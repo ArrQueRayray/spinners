@@ -10,33 +10,40 @@ body {
     background-color: black;
 }
 canvas {
+    aspect-ratio: 4 / 3;
     border: 6px dashed #800;
     background-color: #000000;
+    width: auto;
+    height: stretch;
 }
 </style>
 </head>
 <body onload="startGame()">
 <script>
-// Note: I'm much more used to working with a coordinate system where the middle
+// I'm much more used to working with a coordinate system where the middle
 // of the canvas is the origin. For all intents and purposes, the top-left corner
 // in all user-defined functions is (-480, 360) rather than (0, 0).
 
 var redBG;
 var obstacles;
-var player;
+var mainPlayer;
 var safeArea;
 var goal;
 let timerStart = Date.now() / 1000;
-var timer = 0;
+let timer = 0;
 
 function startGame() {
     redBG = new rect(960, 720);
     redBG.color = "red";
     
-    obstacles = [new spinRect(482, 24, 1), new spinRect(482, 24, 1, 0, 0, 90)];
-    player = new circ(20, -300, 0, "cyan");
-    safeArea = [new circ(240), new rect(180, 180, -270, 0), new rect(180, 180, 270, 0)];
+    // Obstacles and safe areas are stored in arrays to allow for drawing and calculating the
+    // collisions of multiple shapes at once, and since it doesn't matter which particular
+    // shapes are being collided with, as long as the player collides with at least one obstacle,
+    // or no safe area fully overlaps the player.
 
+    obstacles = [new spinRect(482, 24, 1), new spinRect(482, 24, 1, 0, 0, 90)];
+    mainPlayer = new player();
+    safeArea = [new circ(240), new rect(180, 180, -270, 0), new rect(180, 180, 270, 0)];
     goal = [new spinRect(36, 36, 2, 300, 0, 0, "green"), new spinRect(36, 36, 2, 300, 0, 45, "lime")];
 
     gameArea.start();
@@ -50,6 +57,54 @@ var gameArea = {
         this.canvas.style = "position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; margin: auto;";
         this.context = this.canvas.getContext("2d");
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+
+        // An integer array is used for checking key presses to allow for WASD or arrow keys. Key
+        // codes are used in case someone uses a different keyboard layout (i.e. ZQSD can work for
+        // someone with an AZERTY keyboard layout).
+
+        gameArea.keys = [0, 0, 0, 0];
+        window.addEventListener('keydown', function (e) {
+            if (e.repeat) return;
+            switch (e.code) {
+                case "KeyW":
+                case "ArrowUp":
+                    gameArea.keys[0]++;
+                    break;
+                case "KeyA":
+                case "ArrowLeft":
+                    gameArea.keys[1]++;
+                    break;
+                case "KeyS":
+                case "ArrowDown":
+                    gameArea.keys[2]++;
+                    break;
+                case "KeyD":
+                case "ArrowRight":
+                    gameArea.keys[3]++;
+                    break;
+            }
+        })
+        window.addEventListener('keyup', function (e) {
+            switch (e.code) {
+                case "KeyW":
+                case "ArrowUp":
+                    gameArea.keys[0]--;
+                    break;
+                case "KeyA":
+                case "ArrowLeft":
+                    gameArea.keys[1]--;
+                    break;
+                case "KeyS":
+                case "ArrowDown":
+                    gameArea.keys[2]--;
+                    break;
+                case "KeyD":
+                case "ArrowRight":
+                    gameArea.keys[3]--;
+                    break;
+            }
+        })
+        
         this.interval = setInterval(updateGameArea, 16.6667);
     },
     clear : function() {
@@ -57,6 +112,7 @@ var gameArea = {
     }
 }
 
+// Creates a rectangle component based on preferred coordinate system.
 function rect(width=100, height=100, x=0, y=0, angle=0, color="black") {
     this.shape = "rect";
     this.width = width;
@@ -77,6 +133,8 @@ function rect(width=100, height=100, x=0, y=0, angle=0, color="black") {
     }
 }
 
+// Creates a rectangle component that automatically spins at a given speed based 
+// on preferred coordinate system.
 function spinRect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
     this.shape = "rect";
     this.width = width;
@@ -99,6 +157,7 @@ function spinRect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red"
     }
 }
 
+// Creates a circle component.
 function circ(radius=40, x=0, y=0, color="black") {
     this.shape = "circ";
     this.radius = radius;
@@ -109,11 +168,102 @@ function circ(radius=40, x=0, y=0, color="black") {
         ctx = gameArea.context;
         ctx.beginPath();
         ctx.fillStyle = this.color;
-        centerFillCirc(ctx, this.x, this.y, this.radius);
+        centerFillCirc(this.x, this.y, this.radius);
     }
 }
 
-function centerFillCirc(ctx, x, y, radius) {
+// Creates a player component, with a circle alongside additional features such as movement
+// and animation.
+function player() {
+    this.circ = new circ(20, -300, 0, "cyan");
+    this.speedX = 0;
+    this.speedY = 0;
+    this.blink = 3 + 2 * Math.random();
+    this.update = function() {
+        let accel = 0.5; // How fast the player reaches max speed.
+        let maxSpeed = 3.6; // The fastest the player can travel.
+
+        // Change speed variables based on pressed keys.
+        if ((!!gameArea.keys[1] !== !!gameArea.keys[3]) || (!!gameArea.keys[0] !== !!gameArea.keys[2])) {
+            if (!!gameArea.keys[1] && !gameArea.keys[3]) this.speedX -= accel;
+            if (!gameArea.keys[1] && !!gameArea.keys[3]) this.speedX += accel;
+            if (!!gameArea.keys[0] && !gameArea.keys[2]) this.speedY += accel;
+            if (!gameArea.keys[0] && !!gameArea.keys[2]) this.speedY -= accel;
+        }
+
+        // If no keys are held or all held keys cancel out each other, this brings the
+        // player to a stop.
+        function limit(val) {
+            let v = val;
+            if (v) {
+                if (Math.abs(v) <= accel) return 0;
+                if (v > 0) v -= accel; else v += accel;
+            }
+            return v;
+        }
+
+        // If max speed is exceeded, this clamps the speed and keeps it in range.
+        if (!!gameArea.keys[1] == !!gameArea.keys[3]) this.speedX = limit(this.speedX);
+        if (!!gameArea.keys[0] == !!gameArea.keys[2]) this.speedY = limit(this.speedY);
+        this.speedX = Math.min(Math.max(this.speedX, -1 * maxSpeed), maxSpeed);
+        this.speedY = Math.min(Math.max(this.speedY, -1 * maxSpeed), maxSpeed);
+
+        // The player could go faster than max speed by moving diagonally; trigonometry
+        // is needed to clamp the speed in diagonal movement as well.
+        if (this.speedX ** 2 + this.speedY ** 2 > maxSpeed ** 2) {
+            const atan = Math.atan(this.speedY / this.speedX);
+            this.circ.x += this.speedX * Math.abs(Math.cos(atan));
+            this.circ.y += this.speedY * Math.abs(Math.sin(atan));
+        } else {
+            this.circ.x += this.speedX;
+            this.circ.y += this.speedY;
+        }
+        this.circ.update();
+
+        drawPlayerEyes();
+    }
+}
+
+function drawPlayerEyes() {
+    ctx = gameArea.context;
+    ctx.beginPath(); 
+    ctx.fillStyle = "black";
+
+    // The coordinates of the midpoint of the eyes is calculated.
+    const middle = mainPlayer.circ.x + mainPlayer.speedX * 1.5;
+    const height = mainPlayer.circ.y + 3 + 2 * Math.sin(timer * Math.PI * 1.5) + mainPlayer.speedY * 1.5;
+
+    // A blink timer is used to either draw circles or thin rectangles where eyes are located.
+    if (timer < mainPlayer.blink || timer > mainPlayer.blink + 0.1) {
+        if (timer > mainPlayer.blink) mainPlayer.blink += 3.1 + 2 * Math.random();
+        centerFillCirc(middle - 7.5, height, 4);
+        centerFillCirc(middle + 7.5, height, 4);
+    } else {
+        centerFillRect(middle - 7.5, height, 10, 2);
+        centerFillRect(middle + 7.5, height, 10, 2);
+    }
+}
+
+// Handles the "pulsing" animation of the goal, created with a timer and sine/cosine functions.
+function goalAnim() {
+    ctx.beginPath();
+    goal[0].width = 36 + 6 * Math.sin(timer * Math.PI * 2);
+    goal[0].height = goal[0].width;
+    goal[0].update();
+    goal[1].width = 36 + 6 * Math.cos(timer * Math.PI * 2);
+    goal[1].height = goal[1].width;
+    goal[1].update();
+}
+
+// Fills a rectangle based on preferred coordinate system.
+function centerFillRect(x, y, width, height) {
+    ctx = gameArea.context;
+    ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
+}
+
+// Fills a circle for convenience.
+function centerFillCirc(x, y, radius) {
+    ctx = gameArea.context;
     ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
     ctx.fill();
 }
@@ -137,42 +287,34 @@ function circCircOverlap(innerCirc, outerCirc) {
 }
 
 function updateGameArea() {
+    // There was a bug where a key could somehow "jam" with a value of -1. This clamps
+    // the value between 0 and 2 to resolve it.
+    gameArea.keys.forEach(key => {
+        key = Math.min(Math.max(key, 0), 2);
+    });
+
     gameArea.clear();
     timer = Date.now() / 1000 - timerStart;
     ctx = gameArea.context;
     
-    ctx.beginPath();
-    redBG.update();
+    // Each element, including in arrays, is drawn.
 
-    ctx.beginPath();
+    redBG.update();
     safeArea.forEach(element => {
         element.update();
     });
-
-    ctx.beginPath(); 
     obstacles.forEach(element => {
         element.update();
     });
-
-    ctx.beginPath();
-    goal[0].width = 36 + 6 * Math.sin(timer * Math.PI * 2);
-    goal[0].height = goal[0].width;
-    goal[0].update();
-    goal[1].width = 36 + 6 * Math.cos(timer * Math.PI * 2);
-    goal[1].height = goal[1].width;
-    goal[1].update();
+    goalAnim();
 
     ctx.beginPath(); 
-    player.update();
+    mainPlayer.update();
 
-    // ctx.fillText("Time: " + timer, 40, 40);
+    // Debug text, easier to see than printing to console.
+    ctx.fillText("speedX: " + mainPlayer.speedX, 40, 40);
+    ctx.fillText("speedY: " + mainPlayer.speedY, 40, 60);
 }
-
-function test(variable) {
-    this.variable = variable; 
-}
-
-test(1);
 
 </script>
 </body>
