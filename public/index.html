@@ -122,7 +122,6 @@ function rect(width=100, height=100, x=0, y=0, angle=0, color="black") {
     this.y = y;  
     this.color = color;
     this.update = function() {
-        ctx = gameArea.context;  
         ctx.save();
         ctx.translate(this.x + 480, 360 - this.y);        
         ctx.rotate(this.angle);
@@ -145,8 +144,7 @@ function spinRect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red"
     this.y = y; 
     this.color = color;
     this.update = function() {
-        this.angle += this.speed * Math.PI / 180;
-        ctx = gameArea.context;  
+        this.angle += this.speed * Math.PI / 180; 
         ctx.save();
         ctx.translate(this.x + 480, 360 - this.y);        
         ctx.rotate(this.angle);
@@ -165,7 +163,6 @@ function circ(radius=40, x=0, y=0, color="black") {
     this.y = y;    
     this.color = color;
     this.update = function() {
-        ctx = gameArea.context;
         ctx.beginPath();
         ctx.fillStyle = this.color;
         centerFillCirc(this.x, this.y, this.radius);
@@ -175,7 +172,7 @@ function circ(radius=40, x=0, y=0, color="black") {
 // Creates a player component, with a circle alongside additional features such as movement
 // and animation.
 function player() {
-    this.circ = new circ(20, -300, 0, "cyan");
+    this.circ = new circ(16, -300, 0, "cyan");
     this.speedX = 0;
     this.speedY = 0;
     this.blink = 3 + 2 * Math.random();
@@ -225,22 +222,22 @@ function player() {
 }
 
 function drawPlayerEyes() {
-    ctx = gameArea.context;
     ctx.beginPath(); 
     ctx.fillStyle = "black";
 
-    // The coordinates of the midpoint of the eyes is calculated.
-    const middle = mainPlayer.circ.x + mainPlayer.speedX * 1.5;
-    const height = mainPlayer.circ.y + 3 + 2 * Math.sin(timer * Math.PI * 1.5) + mainPlayer.speedY * 1.5;
+    // The coordinates of the midpoint of the eyes is calculated, along with a scaling value.
+    const scale = 0.375 * mainPlayer.circ.radius;
+    const middle = mainPlayer.circ.x + mainPlayer.speedX * (scale / 5);
+    const height = mainPlayer.circ.y + (scale / 2) + (2 * Math.sin(timer * Math.PI * 1.5)) + mainPlayer.speedY * (scale / 5);
 
     // A blink timer is used to either draw circles or thin rectangles where eyes are located.
     if (timer < mainPlayer.blink || timer > mainPlayer.blink + 0.1) {
         if (timer > mainPlayer.blink) mainPlayer.blink += 3.1 + 2 * Math.random();
-        centerFillCirc(middle - 7.5, height, 4);
-        centerFillCirc(middle + 7.5, height, 4);
+        centerFillCirc(middle - scale, height, scale / 1.75);
+        centerFillCirc(middle + scale, height, scale / 1.75);
     } else {
-        centerFillRect(middle - 7.5, height, 10, 2);
-        centerFillRect(middle + 7.5, height, 10, 2);
+        centerFillRect(middle - scale, height, scale * 1.375, scale / 3.5);
+        centerFillRect(middle + scale, height, scale * 1.375, scale / 3.5);
     }
 }
 
@@ -257,15 +254,20 @@ function goalAnim() {
 
 // Fills a rectangle based on preferred coordinate system.
 function centerFillRect(x, y, width, height) {
-    ctx = gameArea.context;
     ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
 }
 
 // Fills a circle for convenience.
 function centerFillCirc(x, y, radius) {
-    ctx = gameArea.context;
     ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
     ctx.fill();
+}
+
+// Returned the distance between two points, squared to prevent square root computation.
+function sqDist(x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    return dx * dx + dy * dy;
 }
 
 function circRectCollision(circ, rect) {
@@ -281,9 +283,10 @@ function circRectOverlap(circ, rect) {
     // 2. circRectCollision(circ, newRect)
 }
 
+// Returns true if innerCirc is fully inside outerCirc.
 function circCircOverlap(innerCirc, outerCirc) {
-    // TODO: Implement by:
-    // 1. Compare center distance to outer radii - inner radii
+    const diff = outerCirc.radius - innerCirc.radius;
+    return diff > 0 && (sqDist(innerCirc.x, innerCirc.y, outerCirc.x, outerCirc.y) <= diff * diff);
 }
 
 function updateGameArea() {
@@ -302,6 +305,11 @@ function updateGameArea() {
     redBG.update();
     safeArea.forEach(element => {
         element.update();
+        if (element.shape == "circ") {
+            console.log(circCircOverlap(mainPlayer.circ, element));
+        } else {
+            console.log(circRectOverlap(mainPlayer.circ, element));
+        }
     });
     obstacles.forEach(element => {
         element.update();
