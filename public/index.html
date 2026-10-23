@@ -41,10 +41,11 @@ function startGame() {
     // shapes are being collided with, as long as the player collides with at least one obstacle,
     // or no safe area fully overlaps the player.
 
-    obstacles = [new spinRect(482, 24, 1), new spinRect(482, 24, 1, 0, 0, 90)];
+    obstacles = [new rect(482, 24, 1), new rect(482, 24, 1, 0, 0, 90)];
+    // obstacles = [new rect(120, 24, 0, 60, 60, 30)];
     mainPlayer = new player();
-    safeArea = [new circ(240), new rect(180, 180, -270, 0), new rect(180, 180, 270, 0)];
-    goal = [new spinRect(36, 36, 2, 300, 0, 0, "green"), new spinRect(36, 36, 2, 300, 0, 45, "lime")];
+    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "black"), new rect(180, 180, 0, 270, 0, 0, "black")];
+    goal = [new rect(36, 36, 2, 300, 0, 0, "green"), new rect(36, 36, 2, 300, 0, 45, "lime")];
 
     gameArea.start();
 }
@@ -104,6 +105,9 @@ var gameArea = {
                     break;
             }
         })
+        window.addEventListener("blur", () => {
+            gameArea.keys = [0, 0, 0, 0];
+        });
         
         this.interval = setInterval(updateGameArea, 16.6667);
     },
@@ -113,28 +117,7 @@ var gameArea = {
 }
 
 // Creates a rectangle component based on preferred coordinate system.
-function rect(width=100, height=100, x=0, y=0, angle=0, color="black") {
-    this.shape = "rect";
-    this.width = width;
-    this.height = height;
-    this.angle = angle * Math.PI / 180;
-    this.x = x;
-    this.y = y;  
-    this.color = color;
-    this.update = function() {
-        ctx.save();
-        ctx.translate(this.x + 480, 360 - this.y);        
-        ctx.rotate(this.angle);
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
-        ctx.restore();    
-    }
-}
-
-// Creates a rectangle component that automatically spins at a given speed based 
-// on preferred coordinate system.
-function spinRect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
+function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
     this.shape = "rect";
     this.width = width;
     this.height = height;
@@ -173,9 +156,10 @@ function circ(radius=40, x=0, y=0, color="black") {
 // and animation.
 function player() {
     this.circ = new circ(16, -300, 0, "cyan");
+    this.hitbox = new circ(12); // Smaller player hitboxes feel fairer for dodging; this has a smaller radius.
     this.speedX = 0;
     this.speedY = 0;
-    this.blink = 3 + 2 * Math.random();
+    this.blink = 3 + 2 * Math.random(); // Blink timer to control how long between each blink.
     this.update = function() {
         let accel = 0.5; // How fast the player reaches max speed.
         let maxSpeed = 3.6; // The fastest the player can travel.
@@ -215,7 +199,12 @@ function player() {
             this.circ.x += this.speedX;
             this.circ.y += this.speedY;
         }
+
         this.circ.update();
+
+        // Update hitbox position as well.
+        this.hitbox.x = this.circ.x;
+        this.hitbox.y = this.circ.y;
 
         drawPlayerEyes();
     }
@@ -263,65 +252,86 @@ function centerFillCirc(x, y, radius) {
     ctx.fill();
 }
 
-// Returned the distance between two points, squared to prevent square root computation.
+// Returns the distance between two points, squared to prevent square root computation.
 function sqDist(x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     return dx * dx + dy * dy;
 }
 
-function circRectCollision(circ, rect) {
-    // TODO: Implement by:
-    // 1. Unrotate circle by negative angle of rectangle
-    // 2. Finding closest point on rectangle to center of circle
-    // 3. Compare point distance to circle radius
+// Returns true if mainCirc is touching mainRect.
+function circRectCollision(mainCirc, mainRect) {
+    // Unrotate circle by negative angle of rectangle
+    const dx = mainCirc.x - mainRect.x;
+    const dy = mainCirc.y - mainRect.y;
+    const sin = Math.sin(mainRect.angle);
+    const cos = Math.cos(mainRect.angle);
+    const localX = cos * dx - sin * dy;
+    const localY = sin * dx + cos * dy;
+    const halfWidth = mainRect.width / 2;
+    const halfHeight = mainRect.height / 2;
+
+    // Find closest point on rectangle to center of circle
+    const closeX = Math.max(-halfWidth, Math.min(halfWidth, localX));
+    const closeY = Math.max(-halfHeight, Math.min(halfHeight, localY));
+
+    // Compare point distance to circle radius
+    return sqDist(localX, localY, closeX, closeY) <= mainCirc.radius * mainCirc.radius;
 }
 
-function circRectOverlap(circ, rect) {
-    // TODO: Implement by: 
-    // 1. subtract radius * (2 + sqrt(2)) from rect width and height
-    // 2. circRectCollision(circ, newRect)
+// Returns true if oldCirc is fully inside oldRect.
+function circRectOverlap(oldCirc, oldRect) {
+    // Treat circ as point, subtract radius * 2 from rect width and height, use with circRectCollision().
+    const diff = oldCirc.radius * 2;
+    const newCirc = new circ(0, oldCirc.x, oldCirc.y);
+    const newRect = new rect(oldRect.width - diff, oldRect.height - diff, oldRect.speed, oldRect.x, oldRect.y, oldRect.angle);
+    return circRectCollision(newCirc, newRect);
 }
 
 // Returns true if innerCirc is fully inside outerCirc.
 function circCircOverlap(innerCirc, outerCirc) {
+    // Compare center distance to outer radii - inner radii.
     const diff = outerCirc.radius - innerCirc.radius;
     return diff > 0 && (sqDist(innerCirc.x, innerCirc.y, outerCirc.x, outerCirc.y) <= diff * diff);
 }
 
 function updateGameArea() {
-    // There was a bug where a key could somehow "jam" with a value of -1. This clamps
-    // the value between 0 and 2 to resolve it.
-    gameArea.keys.forEach(key => {
-        key = Math.min(Math.max(key, 0), 2);
-    });
-
+    ctx = gameArea.context;
     gameArea.clear();
     timer = Date.now() / 1000 - timerStart;
-    ctx = gameArea.context;
+
+    // There was a bug where a key could somehow "jam" with a value of -1. This clamps
+    // the value between 0 and 2 to resolve it.
+    console.log(gameArea.keys[0] + " " + gameArea.keys[1] + " " + gameArea.keys[2] + " " + gameArea.keys[3]);
+    for (let i = 0; i < 4; i++) {
+        gameArea.keys[i] = Math.min(Math.max(gameArea.keys[i], 0), 2);
+    }
     
     // Each element, including in arrays, is drawn.
-
     redBG.update();
+
+    // Determine if player is alive by checked if fully inside safe area and not touching obstacles
+    let alive = false;
     safeArea.forEach(element => {
         element.update();
         if (element.shape == "circ") {
-            console.log(circCircOverlap(mainPlayer.circ, element));
+            if (circCircOverlap(mainPlayer.hitbox, element)) alive = true;
         } else {
-            console.log(circRectOverlap(mainPlayer.circ, element));
+            if (circRectOverlap(mainPlayer.hitbox, element)) alive = true;
         }
     });
     obstacles.forEach(element => {
         element.update();
+        if (circRectCollision(mainPlayer.hitbox, element)) alive = false;
     });
+
     goalAnim();
 
     ctx.beginPath(); 
     mainPlayer.update();
 
     // Debug text, easier to see than printing to console.
-    ctx.fillText("speedX: " + mainPlayer.speedX, 40, 40);
-    ctx.fillText("speedY: " + mainPlayer.speedY, 40, 60);
+    ctx.fillText("alive?: " + alive, 40, 60);
 }
 
 </script>
