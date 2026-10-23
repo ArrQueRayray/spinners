@@ -24,13 +24,10 @@ canvas {
 // of the canvas is the origin. For all intents and purposes, the top-left corner
 // in all user-defined functions is (-480, 360) rather than (0, 0).
 
-var redBG;
-var obstacles;
-var mainPlayer;
-var safeArea;
-var goal;
+var redBG, obstacles, mainPlayer, safeArea, goal;
 let timerStart = Date.now() / 1000;
 let timer = 0;
+let hDist, hDiag;
 
 function startGame() {
     redBG = new rect(960, 720);
@@ -44,10 +41,17 @@ function startGame() {
     obstacles = [new rect(482, 24, 1), new rect(482, 24, 1, 0, 0, 90)];
     // obstacles = [new rect(120, 24, 0, 60, 60, 30)];
     mainPlayer = new player();
-    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "black"), new rect(180, 180, 0, 270, 0, 0, "black")];
+    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "green"), new rect(180, 180, 0, 270, 0, 0, "green")];
     goal = [new rect(36, 36, 2, 300, 0, 0, "green"), new rect(36, 36, 2, 300, 0, 45, "lime")];
+    setupPlayer();
 
     gameArea.start();
+}
+
+// Sets up distance from center to edge of the hitbox, and resulting x/y difference at 45-degree angle.
+function setupPlayer() {
+    hDist = mainPlayer.hitboxScale * mainPlayer.circ.radius;
+    hDiag = hDist * Math.SQRT1_2;
 }
 
 var gameArea = {
@@ -152,17 +156,16 @@ function circ(radius=40, x=0, y=0, color="black") {
     }
 }
 
-// Creates a player component, with a circle alongside additional features such as movement
-// and animation.
+// Creates a player component, with a circle alongside additional features such as movement and animation.
 function player() {
     this.circ = new circ(16, -300, 0, "cyan");
-    this.hitbox = new circ(12); // Smaller player hitboxes feel fairer for dodging; this has a smaller radius.
+    this.hitboxScale = 0.75; // Smaller hitboxes feel fairer; this specifies hitbox scale compared to player size.
     this.speedX = 0;
     this.speedY = 0;
     this.blink = 3 + 2 * Math.random(); // Blink timer to control how long between each blink.
     this.update = function() {
-        let accel = 0.5; // How fast the player reaches max speed.
-        let maxSpeed = 3.6; // The fastest the player can travel.
+        let accel = 0.03125 * this.circ.radius; // How fast the player reaches max speed.
+        let maxSpeed = 0.225 * this.circ.radius; // The fastest the player can travel.
 
         // Change speed variables based on pressed keys.
         if ((!!gameArea.keys[1] !== !!gameArea.keys[3]) || (!!gameArea.keys[0] !== !!gameArea.keys[2])) {
@@ -172,8 +175,7 @@ function player() {
             if (!gameArea.keys[0] && !!gameArea.keys[2]) this.speedY -= accel;
         }
 
-        // If no keys are held or all held keys cancel out each other, this brings the
-        // player to a stop.
+        // If no keys are held or all held keys cancel out each other, this brings the player to a stop.
         function limit(val) {
             let v = val;
             if (v) {
@@ -201,11 +203,6 @@ function player() {
         }
 
         this.circ.update();
-
-        // Update hitbox position as well.
-        this.hitbox.x = this.circ.x;
-        this.hitbox.y = this.circ.y;
-
         drawPlayerEyes();
     }
 }
@@ -259,11 +256,11 @@ function sqDist(x1, y1, x2, y2) {
     return dx * dx + dy * dy;
 }
 
-// Returns true if mainCirc is touching mainRect.
-function circRectCollision(mainCirc, mainRect) {
-    // Unrotate circle by negative angle of rectangle
-    const dx = mainCirc.x - mainRect.x;
-    const dy = mainCirc.y - mainRect.y;
+// Returns true if mainPoint is inside mainRect.
+function inRect(mainPoint, mainRect) {
+    // Unrotate circle by negative angle of rectangle.
+    const dx = mainPoint.x - mainRect.x;
+    const dy = mainPoint.y - mainRect.y;
     const sin = Math.sin(mainRect.angle);
     const cos = Math.cos(mainRect.angle);
     const localX = cos * dx - sin * dy;
@@ -271,28 +268,22 @@ function circRectCollision(mainCirc, mainRect) {
     const halfWidth = mainRect.width / 2;
     const halfHeight = mainRect.height / 2;
 
-    // Find closest point on rectangle to center of circle
+    // Find closest point on rectangle to mainPoint.
     const closeX = Math.max(-halfWidth, Math.min(halfWidth, localX));
     const closeY = Math.max(-halfHeight, Math.min(halfHeight, localY));
 
-    // Compare point distance to circle radius
-    return sqDist(localX, localY, closeX, closeY) <= mainCirc.radius * mainCirc.radius;
+    // Check if closest point is equal to mainPoint.
+    return localX == closeX && localY == closeY;
 }
 
-// Returns true if oldCirc is fully inside oldRect.
-function circRectOverlap(oldCirc, oldRect) {
-    // Treat circ as point, subtract radius * 2 from rect width and height, use with circRectCollision().
-    const diff = oldCirc.radius * 2;
-    const newCirc = new circ(0, oldCirc.x, oldCirc.y);
-    const newRect = new rect(oldRect.width - diff, oldRect.height - diff, oldRect.speed, oldRect.x, oldRect.y, oldRect.angle);
-    return circRectCollision(newCirc, newRect);
+// Returns true if mainPoint is inside mainCirc.
+function inCirc(mainPoint, mainCirc) {
+    // Compare distance to radius.
+    return sqDist(mainPoint.x, mainPoint.y, mainCirc.x, mainCirc.y) <= mainCirc.radius * mainCirc.radius;;
 }
 
-// Returns true if innerCirc is fully inside outerCirc.
-function circCircOverlap(innerCirc, outerCirc) {
-    // Compare center distance to outer radii - inner radii.
-    const diff = outerCirc.radius - innerCirc.radius;
-    return diff > 0 && (sqDist(innerCirc.x, innerCirc.y, outerCirc.x, outerCirc.y) <= diff * diff);
+function inShape(mainPoint, mainShape) {
+    return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
 }
 
 function updateGameArea() {
@@ -302,28 +293,59 @@ function updateGameArea() {
 
     // There was a bug where a key could somehow "jam" with a value of -1. This clamps
     // the value between 0 and 2 to resolve it.
-    console.log(gameArea.keys[0] + " " + gameArea.keys[1] + " " + gameArea.keys[2] + " " + gameArea.keys[3]);
+    // console.log(gameArea.keys[0] + " " + gameArea.keys[1] + " " + gameArea.keys[2] + " " + gameArea.keys[3]);
     for (let i = 0; i < 4; i++) {
         gameArea.keys[i] = Math.min(Math.max(gameArea.keys[i], 0), 2);
     }
     
     // Each element, including in arrays, is drawn.
     redBG.update();
+    safeArea.forEach(element => {element.update()});
+    obstacles.forEach(element => {element.update()});
 
-    // Determine if player is alive by checked if fully inside safe area and not touching obstacles
-    let alive = false;
-    safeArea.forEach(element => {
-        element.update();
-        if (element.shape == "circ") {
-            if (circCircOverlap(mainPlayer.hitbox, element)) alive = true;
-        } else {
-            if (circRectOverlap(mainPlayer.hitbox, element)) alive = true;
+    // Formerly, this performed a check with the full bounding boxes and circle. However, this proved
+    // problematic with cases where the player doesn't fully intersect any safe area shape but visually
+    // is fully contained in the safe area as a whole. This incorrectly deemed the player dead, and is
+    // resolved by approximating the hitbox with individual points and checking them.
+    let alive = true;
+    
+    // Create hitbox points.
+    const cx = mainPlayer.circ.x
+    const cy = mainPlayer.circ.y;
+    let hitboxPoints = [{x: cx + hDist, y: cy, alive: false},
+                        {x: cx - hDist, y: cy, alive: false},
+                        {x: cx, y: cy + hDist, alive: false},
+                        {x: cx, y: cy - hDist, alive: false},
+                        {x: cx - hDiag, y: cy + hDiag, alive: false},
+                        {x: cx + hDiag, y: cy + hDiag, alive: false},
+                        {x: cx - hDiag, y: cy - hDiag, alive: false},
+                        {x: cx + hDiag, y: cy - hDiag, alive: false}];
+
+    // Check if each point is alive, i.e. in a safeArea shape and not in an obstacles shape.
+    for (let i = 0; i < hitboxPoints.length; i++) {
+        for (let j = 0; j < safeArea.length; j++) {
+            if (inShape(hitboxPoints[i], safeArea[j])) {
+                hitboxPoints[i].alive = true;
+                break;
+            }
         }
-    });
-    obstacles.forEach(element => {
-        element.update();
-        if (circRectCollision(mainPlayer.hitbox, element)) alive = false;
-    });
+
+        // This is skipped if the point wasn't in a safe area to begin with.
+        if (hitboxPoints[i].alive) {
+            for (let j = 0; j < obstacles.length; j++) {
+                if (inShape(hitboxPoints[i], obstacles[j])) {
+                    hitboxPoints[i].alive = false;
+                    break;
+                }
+            }
+        }
+
+        // Once a single point is guaranteed dead, the player is also guaranteed dead.
+        if (!hitboxPoints[i].alive) {
+            alive = false;
+            break;
+        }
+    }
 
     goalAnim();
 
@@ -331,7 +353,14 @@ function updateGameArea() {
     mainPlayer.update();
 
     // Debug text, easier to see than printing to console.
-    ctx.fillText("alive?: " + alive, 40, 60);
+    ctx.fillText("alive?: " + hitboxPoints[0].alive + " " + 
+                                hitboxPoints[1].alive + " " + 
+                                hitboxPoints[2].alive + " " + 
+                                hitboxPoints[3].alive + " " + 
+                                hitboxPoints[4].alive + " " + 
+                                hitboxPoints[5].alive + " " + 
+                                hitboxPoints[6].alive + " " + 
+                                hitboxPoints[7].alive, 40, 60);
 }
 
 </script>
