@@ -20,38 +20,30 @@ canvas {
 </head>
 <body onload="startGame()">
 <script>
-// I'm much more used to working with a coordinate system where the middle
-// of the canvas is the origin. For all intents and purposes, the top-left corner
-// in all user-defined functions is (-480, 360) rather than (0, 0).
+// I'm much more used to working with a coordinate system where the middle of the canvas is the origin. For all
+// intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
 
-var redBG, obstacles, mainPlayer, safeArea, goal;
+var redBG, mainPlayer, mainGoal, safeArea, obstacles;
+let levelComplete = false;
 let timerStart = Date.now() / 1000;
-let timer = 0;
-let hDist, hDiag;
+let timer = 0, completeTime = -1;
+let hDist, hDiag, scale;
 
 function startGame() {
     redBG = new rect(960, 720);
     redBG.color = "red";
     
-    // Obstacles and safe areas are stored in arrays to allow for drawing and calculating the
-    // collisions of multiple shapes at once, and since it doesn't matter which particular
-    // shapes are being collided with, as long as the player collides with at least one obstacle,
-    // or no safe area fully overlaps the player.
+    // Scale determines player and goal size; player and goal are stored as variables, given defined coordinates.
+    scale = 1;
+    mainPlayer = new player(-300, 0);
+    mainGoal = new goal(300, 0);
 
+    // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
+    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "black"), new rect(180, 180, 0, 270, 0, 0, "black")];
     obstacles = [new rect(482, 24, 1), new rect(482, 24, 1, 0, 0, 90)];
     // obstacles = [new rect(120, 24, 0, 60, 60, 30)];
-    mainPlayer = new player();
-    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "green"), new rect(180, 180, 0, 270, 0, 0, "green")];
-    goal = [new rect(36, 36, 2, 300, 0, 0, "green"), new rect(36, 36, 2, 300, 0, 45, "lime")];
-    setupPlayer();
 
     gameArea.start();
-}
-
-// Sets up distance from center to edge of the hitbox, and resulting x/y difference at 45-degree angle.
-function setupPlayer() {
-    hDist = mainPlayer.hitboxScale * mainPlayer.circ.radius;
-    hDiag = hDist * Math.SQRT1_2;
 }
 
 var gameArea = {
@@ -120,7 +112,7 @@ var gameArea = {
     }
 }
 
-// Creates a rectangle component based on preferred coordinate system.
+// Creates a rectangle component with x and y referring to center in preferred coordinate system.
 function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
     this.shape = "rect";
     this.width = width;
@@ -142,7 +134,7 @@ function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red") {
     }
 }
 
-// Creates a circle component.
+// Creates a circle component with x and y referring to center in preferred coordinate system.
 function circ(radius=40, x=0, y=0, color="black") {
     this.shape = "circ";
     this.radius = radius;
@@ -156,23 +148,34 @@ function circ(radius=40, x=0, y=0, color="black") {
     }
 }
 
-// Creates a player component, with a circle alongside additional features such as movement and animation.
-function player() {
-    this.circ = new circ(16, -300, 0, "cyan");
+// Creates a player component, with circle and additional features such as movement and animation.
+function player(x=0, y=0) {
+    this.circ = new circ(16 * scale, x, y, "cyan");
     this.hitboxScale = 0.75; // Smaller hitboxes feel fairer; this specifies hitbox scale compared to player size.
     this.speedX = 0;
     this.speedY = 0;
+    this.controllable = true;
     this.blink = 3 + 2 * Math.random(); // Blink timer to control how long between each blink.
+    this.setup = function() {
+        // Sets up distance from center to edge of the hitbox, and resulting x/y difference at 45-degree angle.
+        hDist = this.hitboxScale * this.circ.radius;
+        hDiag = hDist * Math.SQRT1_2;
+    }
     this.update = function() {
-        let accel = 0.03125 * this.circ.radius; // How fast the player reaches max speed.
-        let maxSpeed = 0.225 * this.circ.radius; // The fastest the player can travel.
+        this.circ.radius = Math.max(0, 16 * scale);
+        const accel = 0.5 * scale; // How fast the player reaches max speed.
+        const maxSpeed = 3.6 * scale; // The fastest the player can travel.
+        const moving = (!!gameArea.keys[1] !== !!gameArea.keys[3]) || (!!gameArea.keys[0] !== !!gameArea.keys[2]);
 
         // Change speed variables based on pressed keys.
-        if ((!!gameArea.keys[1] !== !!gameArea.keys[3]) || (!!gameArea.keys[0] !== !!gameArea.keys[2])) {
+
+        if (this.controllable && moving) {
             if (!!gameArea.keys[1] && !gameArea.keys[3]) this.speedX -= accel;
             if (!gameArea.keys[1] && !!gameArea.keys[3]) this.speedX += accel;
             if (!!gameArea.keys[0] && !gameArea.keys[2]) this.speedY += accel;
             if (!gameArea.keys[0] && !!gameArea.keys[2]) this.speedY -= accel;
+        } else if (!this.controllable) {
+            gameArea.keys = [0, 0, 0, 0];
         }
 
         // If no keys are held or all held keys cancel out each other, this brings the player to a stop.
@@ -203,39 +206,45 @@ function player() {
         }
 
         this.circ.update();
-        drawPlayerEyes();
+        this.drawEyes();
     }
+    this.drawEyes = function() {
+        ctx.beginPath(); 
+        ctx.fillStyle = "black";
+
+        // The coordinates of the midpoint of the eyes is calculated.
+        const middle = mainPlayer.circ.x + mainPlayer.speedX * 1.333;
+        const height = mainPlayer.circ.y + (3 * scale) + (2 * scale * Math.sin(timer * Math.PI * 1.5)) + mainPlayer.speedY * 1.333;
+
+        // A blink timer is used to either draw circles or thin rectangles where eyes are located.
+        if ((timer < mainPlayer.blink || timer > mainPlayer.blink + 0.06) && !levelComplete) {
+            if (timer > mainPlayer.blink) mainPlayer.blink += 3.1 + 2 * Math.random();
+            centerFillCirc(middle - 5.6 * scale, height, 3.2 * scale);
+            centerFillCirc(middle + 5.6 * scale, height, 3.2 * scale);
+        } else {
+            centerFillRect(middle - 5.6 * scale, height, 8.4 * scale, 1.5 * scale);
+            centerFillRect(middle + 5.6 * scale, height, 8.4 * scale, 1.5 * scale);
+        }
+    } 
+    this.setup();
 }
 
-function drawPlayerEyes() {
-    ctx.beginPath(); 
-    ctx.fillStyle = "black";
-
-    // The coordinates of the midpoint of the eyes is calculated, along with a scaling value.
-    const scale = 0.375 * mainPlayer.circ.radius;
-    const middle = mainPlayer.circ.x + mainPlayer.speedX * (scale / 5);
-    const height = mainPlayer.circ.y + (scale / 2) + (2 * Math.sin(timer * Math.PI * 1.5)) + mainPlayer.speedY * (scale / 5);
-
-    // A blink timer is used to either draw circles or thin rectangles where eyes are located.
-    if (timer < mainPlayer.blink || timer > mainPlayer.blink + 0.1) {
-        if (timer > mainPlayer.blink) mainPlayer.blink += 3.1 + 2 * Math.random();
-        centerFillCirc(middle - scale, height, scale / 1.75);
-        centerFillCirc(middle + scale, height, scale / 1.75);
-    } else {
-        centerFillRect(middle - scale, height, scale * 1.375, scale / 3.5);
-        centerFillRect(middle + scale, height, scale * 1.375, scale / 3.5);
+// Creates a goal component, with a "pulsing" animation created with a timer and sine/cosine functions.
+function goal(x=0, y=0){
+    this.rects = [0, 0, 0];
+    this.goalScale = 1;
+    for (let i = 0; i < 3; i++) {
+        this.rects[i] = new rect(36 * scale * this.goalScale, 36 * scale * this.goalScale, 2, x, y, i * 30 - 15, "rgba(255, 255, 255, 0.5)");
     }
-}
-
-// Handles the "pulsing" animation of the goal, created with a timer and sine/cosine functions.
-function goalAnim() {
-    ctx.beginPath();
-    goal[0].width = 36 + 6 * Math.sin(timer * Math.PI * 2);
-    goal[0].height = goal[0].width;
-    goal[0].update();
-    goal[1].width = 36 + 6 * Math.cos(timer * Math.PI * 2);
-    goal[1].height = goal[1].width;
-    goal[1].update();
+    this.update = function() {
+        ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+            this.rects[i].width = 36 + (12 - 3 * i) * Math.sin(timer * Math.PI * 2 + (i * 3 * Math.PI / 4));
+            this.rects[i].width *= scale * this.goalScale;
+            this.rects[i].height = this.rects[i].width;
+            this.rects[i].update();
+        }
+    };
 }
 
 // Fills a rectangle based on preferred coordinate system.
@@ -303,12 +312,36 @@ function updateGameArea() {
     safeArea.forEach(element => {element.update()});
     obstacles.forEach(element => {element.update()});
 
+    // Check if player is alive.
+    let alive = checkAliveCollisions();
+
+    // Goal and player are drawn last.
+    mainGoal.update();
+    mainPlayer.update();
+
+    // If player is close enough to the goal, the level is officially completed.
+    const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, mainGoal.rects[0].x, mainGoal.rects[0].y);
+    if (sqGoalDist < 1296 * scale * scale && !levelComplete) {
+        levelComplete = true;
+        mainPlayer.controllable = false; 
+        completeTime = timer;
+    }
+
+    if (levelComplete) {
+        levelCompleteAnimation();
+    }
+
+    // Debug text, easier to see than printing to console.
+    ctx.fillText("alive?: " + alive, 40, 60);
+}
+
+// Check if player is alive through collisions between shapes in game area.
+function checkAliveCollisions() {
     // Formerly, this performed a check with the full bounding boxes and circle. However, this proved
     // problematic with cases where the player doesn't fully intersect any safe area shape but visually
     // is fully contained in the safe area as a whole. This incorrectly deemed the player dead, and is
     // resolved by approximating the hitbox with individual points and checking them.
-    let alive = true;
-    
+
     // Create hitbox points.
     const cx = mainPlayer.circ.x
     const cy = mainPlayer.circ.y;
@@ -342,25 +375,28 @@ function updateGameArea() {
 
         // Once a single point is guaranteed dead, the player is also guaranteed dead.
         if (!hitboxPoints[i].alive) {
-            alive = false;
-            break;
+            return false;
         }
     }
+    return true;
+}
 
-    goalAnim();
-
-    ctx.beginPath(); 
-    mainPlayer.update();
-
-    // Debug text, easier to see than printing to console.
-    ctx.fillText("alive?: " + hitboxPoints[0].alive + " " + 
-                                hitboxPoints[1].alive + " " + 
-                                hitboxPoints[2].alive + " " + 
-                                hitboxPoints[3].alive + " " + 
-                                hitboxPoints[4].alive + " " + 
-                                hitboxPoints[5].alive + " " + 
-                                hitboxPoints[6].alive + " " + 
-                                hitboxPoints[7].alive, 40, 60);
+// Animate player being sucked into goal, returning true when animation is complete.
+function levelCompleteAnimation() {
+    const dx = mainGoal.rects[0].x - mainPlayer.circ.x;
+    const dy = mainGoal.rects[0].y - mainPlayer.circ.y;
+    const timeSinceCompletion = timer - completeTime;
+    if (timeSinceCompletion < 0.75) {
+        mainPlayer.circ.x += dx * timeSinceCompletion * 0.3;
+        mainPlayer.circ.y += dy * timeSinceCompletion * 0.3;
+        scale = 7.7 * Math.sin((timeSinceCompletion / 0.75) + 1.2) - 6.2;
+        mainGoal.goalScale = 2 * Math.sin((timeSinceCompletion / 0.75) * 5 * Math.PI / 6 + Math.PI / 6);
+        return false;
+    } else {
+        scale = 0;
+        mainGoal.goalScale = 0;
+        return true;
+    }
 }
 
 </script>
