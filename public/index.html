@@ -23,13 +23,14 @@ canvas {
 // I'm much more used to working with a coordinate system where the middle of the canvas is the origin. For all
 // intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
 
-// Declare context, variables for shape arrays, and object for mouse coordinates.
+// Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
 var ctx, backgroundShapes = [], menuButtons = [];
 var mainPlayer, mainGoal, safeArea, obstacles;
-var mouseCoords = {x: -999, y: -999};
+var levels = {}, mouseCoords = {x: -999, y: -999};
+fetchLevels();
 
 // Declare and/or initialize audio-related components.
-var gameMusic = new Audio("assets/audio/spinners.mp3");
+var gameMusic = new Audio("assets/audio/spinners.ogg");
 gameMusic.preload = true;
 gameMusic.loop = true;
 gameMusic.volume = 0.2;
@@ -51,32 +52,78 @@ let hDist, hDiag, scale;
 const mainFont = new FontFace("Fredoka", 'url(assets/misc/Fredoka.ttf)');
 mainFont.load().then((font) => {document.fonts.add(font)});
 
-
+// Starts game by starting game area.
 function startGame() {
     gameArea.start();
 }
 
+// Sets levels to levels.json.
+async function fetchLevels() {
+    try {
+        levels = await fetch("assets/levels.json").then((lv) => {return lv.json();});
+    } catch (error) {
+        console.error("Levels not found");
+    }
+}
+
 // Loads objects separately from starting game, allowing for reload without reloading page.
-function loadLevel() {
+function loadLevel(level) {
     timerStart = Date.now() / 1000, timer = 0, endTime = 0;
     gameState = "level";
     levelState = "none";
 
-    // Scale determines player and goal size; player and goal are stored as variables, given defined coordinates.
-    scale = 1;
+    // Get desired level from levels.json if possible.
+    try {
+        const loadedLevel = levels[level];
 
-    backgroundShapes = [new rect(960, 720)];
-    backgroundShapes[0].color = "red";
+        // Scale determines player and goal size.
+        scale = Object.hasOwn(loadedLevel, "scale") ? loadedLevel.scale: 1;
 
-    mainPlayer = new player(-300, 0);
-    mainGoal = new goal(300, 0);
+        // All planned levels have a solid red background, and some may have text.
+        if (Object.hasOwn(loadedLevel, "text")) {
+            const obj = loadedLevel.text;
+            const size = Object.hasOwn(obj, "size") ? obj.size : 36;
+            const color = Object.hasOwn(obj, "color") ? obj.color : "black";
+            const align = Object.hasOwn(obj, "align") ? obj.align : "center";
+            backgroundShapes = [new rect(960, 720), new text(obj.string, obj.x, obj.y, size, color, align)];
+        } else backgroundShapes = [new rect(960, 720)];
+        backgroundShapes[0].color = "red";
 
-    // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
-    safeArea = [new circ(240), new rect(180, 180, 0, -270, 0, 0, "black"), new rect(180, 180, 0, 270, 0, 0, "black")];
-    obstacles = [new rect(482, 24, 1), new rect(482, 24, 1, 0, 0, 90)];
-    // obstacles = [new rect(120, 24, 0, 60, 60, 30)];
+        // Player and goal are stored as variables, given defined coordinates
+        mainPlayer = new player(loadedLevel.player.x, loadedLevel.player.y);
+        mainGoal = new goal(loadedLevel.goal.x, loadedLevel.goal.y);
+
+        // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
+
+        safeArea = new Array(loadedLevel.safeArea.length);
+        for (let i = 0; i < loadedLevel.safeArea.length; i++) {
+            const obj = loadedLevel.safeArea[i];
+            const color = Object.hasOwn(obj, "color") ? obj.color : "black";
+            if (obj.type == "rect") {
+                const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
+                const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
+                safeArea[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, angle, color);
+            } else safeArea[i] = new circ(obj.radius, obj.x, obj.y, color);
+        }
+
+        obstacles = new Array(loadedLevel.obstacles.length);
+        for (let i = 0; i < loadedLevel.obstacles.length; i++) {
+            const obj = loadedLevel.obstacles[i];
+            const color = Object.hasOwn(obj, "color") ? obj.color : "red";
+            if (obj.type == "rect") {
+                const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
+                const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
+                obstacles[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, angle, color);
+            } else {
+                obstacles[i] = new circ(obj.radius, obj.x, shape.y, color);
+            }
+        }
+    } catch (error) {
+        console.error("JSON parsing error: " + error);
+    }
 }
 
+// Setup game area.
 var gameArea = {
     canvas: document.createElement("canvas"),
     start: function() {
@@ -100,7 +147,7 @@ var gameArea = {
                 if (gameState == "none") {
                     clickable = false;
                     gameMusic.play();
-                    loadLevel();
+                    loadLevel("level1");
                 }
             }
         });
@@ -216,6 +263,24 @@ function circ(radius=40, x=0, y=0, color="black") {
         ctx.beginPath();
         ctx.fillStyle = this.color;
         centerFillCirc(this.x, this.y, this.radius);
+    }
+}
+
+// Creates a text component based on preferred coordinate system.
+function text(string="Hello!", x=0, y=0, size=36, color="black", align="center") {
+    this.text = string;
+    this.x = x;
+    this.y = y; 
+    this.size = size;
+    this.color = color; 
+    this.align = align; 
+    this.update = function() {
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.font = this.size + "px Fredoka, Tahoma, sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = this.align;
+        ctx.fillText(this.text, this.x + 480, 360 - this.y);
     }
 }
 
@@ -367,16 +432,6 @@ function centerFillCirc(x, y, radius) {
     ctx.fill();
 }
 
-// Fills text based on preferred coordinate system.
-function drawText(text="Hello!", x=0, y=0, size=48, color="black", align="center") {
-    ctx.beginPath();
-    ctx.fillStyle = color;
-    ctx.font = size + "px Fredoka, Tahoma, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = align;
-    ctx.fillText(text, x + 480, 360 - y);
-}
-
 // Returns the distance between two points, squared to prevent square root computation.
 function sqDist(x1, y1, x2, y2) {
     const dx = x2 - x1;
@@ -419,8 +474,9 @@ function startMenu() {
     let playButton = new rect(360, 200);
     playButton.angle = 3 * Math.cos(timer * Math.PI) * Math.PI / 180;
     playButton.color = "red";
+    playButton.text = new text("Play", 0, 0, 120);
     playButton.update();
-    drawText("Play", 0, 0, 120);
+    playButton.text.update();
 
     // Check if mouse is intersecting button.
     clickable = inShape(mouseCoords, playButton);
@@ -491,10 +547,10 @@ function levelLogic() {
     // When the level is over, an animation is played before the level is reloaded.
     switch (levelState) {
         case "complete":
-            if (levelCompleteAnimation()) loadLevel();
+            if (levelCompleteAnimation()) loadLevel("level1");
             break;
         case "failed":
-            if (levelFailedAnimation()) loadLevel();
+            if (levelFailedAnimation()) loadLevel("level1");
             break;
         
     }

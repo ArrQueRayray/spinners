@@ -1,0 +1,92 @@
+{
+    "level1": {
+        "name": "Spinners",
+        "text": {"x": 0, "y": 300,
+            "string": "Use WASD or arrow keys to reach the goal."
+        },
+        "player": {"x": -300, "y": 0},
+        "goal": {"x": 300, "y": 0},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 240
+            },
+            {
+                "type": "rect", 
+                "x": -270, "y": 0,
+                "width": 180, "height": 180
+            },
+            {
+                "type": "rect", 
+                "x": 270, "y": 0, 
+                "width": 180, "height": 180
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 90
+            }
+        ]
+    },
+    "level2": {
+        "name": "Test",
+        "text": {"x": 0, "y": 300,
+            "string": "This is a test different level."
+        },
+        "player": {"x": 300, "y": 0},
+        "goal": {"x": -300, "y": 0},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 240
+            },
+            {
+                "type": "rect", 
+                "x": -270, "y": 0,
+                "width": 180, "height": 180
+            },
+            {
+                "type": "rect", 
+                "x": 270, "y": 0, 
+                "width": 180, "height": 180
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 90
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 24, 
+                "speed": 1, "angle": 135
+            }
+        ]
+    }
+}
