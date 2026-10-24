@@ -1,0 +1,10 @@
+{
+    "level": 1,
+    "name": "Spinners",
+    "text": {"x": -300, "y": 0,
+        "string": "Use WASD or arrow keys to reach the goal."
+    },
+    "scale": 1,
+    "player": {"x": -300, "y": 0},
+    "goal": {"x": -300, "y": 0}
+}

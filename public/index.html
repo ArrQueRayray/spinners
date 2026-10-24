@@ -23,26 +23,50 @@ canvas {
 // I'm much more used to working with a coordinate system where the middle of the canvas is the origin. For all
 // intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
 
-var redBG, mainPlayer, mainGoal, safeArea, obstacles;
-let levelState;
-let timerStart, timer, endTime;
+// Declare context, variables for shape arrays, and object for mouse coordinates.
+var ctx, backgroundShapes = [], menuButtons = [];
+var mainPlayer, mainGoal, safeArea, obstacles;
+var mouseCoords = {x: -999, y: -999};
+
+// Declare and/or initialize audio-related components.
+var gameMusic = new Audio("assets/audio/spinners.mp3");
+gameMusic.preload = true;
+gameMusic.loop = true;
+gameMusic.volume = 0.2;
+const soundEffects = {
+    click: new Audio("assets/audio/click.wav"),
+    enter: new Audio("assets/audio/enter.wav"),
+    hit: new Audio("assets/audio/hit.wav"),
+    ouch: new Audio("assets/audio/ouch.wav"),
+    wink: new Audio("assets/audio/wink.wav")
+};
+
+// Declare and/or initialize other gameplay states and properties.
+var muted = false, clickable = false;
+let gameState = "none", levelState = "none";
+let timerStart = Date.now() / 1000, timer = 0, endTime = 0;
 let hDist, hDiag, scale;
 
+// Setup font to be used in-game.
+const mainFont = new FontFace("Fredoka", 'url(assets/misc/Fredoka.ttf)');
+mainFont.load().then((font) => {document.fonts.add(font)});
+
+
 function startGame() {
-    loadLevel();
     gameArea.start();
 }
 
-// Loads objects separately from starting game, allowing for reload without reloading page
+// Loads objects separately from starting game, allowing for reload without reloading page.
 function loadLevel() {
+    timerStart = Date.now() / 1000, timer = 0, endTime = 0;
+    gameState = "level";
     levelState = "none";
-    timerStart = Date.now() / 1000, timer = 0, endTime = -1;
 
     // Scale determines player and goal size; player and goal are stored as variables, given defined coordinates.
     scale = 1;
 
-    redBG = new rect(960, 720);
-    redBG.color = "red";
+    backgroundShapes = [new rect(960, 720)];
+    backgroundShapes[0].color = "red";
 
     mainPlayer = new player(-300, 0);
     mainGoal = new goal(300, 0);
@@ -54,22 +78,51 @@ function loadLevel() {
 }
 
 var gameArea = {
-    canvas : document.createElement("canvas"),
-    start : function() {
+    canvas: document.createElement("canvas"),
+    start: function() {
         this.canvas.width = 960;
         this.canvas.height = 720;
         this.canvas.style = "position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; margin: auto;";
-        this.context = this.canvas.getContext("2d");
+        ctx = this.canvas.getContext("2d");
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
 
+        this.setupMouse();
+        this.setupKeys();
+        
+        this.interval = setInterval(updateGameArea, 16.6667);
+    },
+    setupMouse: function() {
+        // The mouse is used to guarantee focus on the window, allowing for sound playback, and
+        // eventually interacting with menu buttons.
+        window.addEventListener('mousedown', function (e) {
+            if (clickable) {
+                playSound("click", 0.4);
+                if (gameState == "none") {
+                    clickable = false;
+                    gameMusic.play();
+                    loadLevel();
+                }
+            }
+        });
+
+        // The coordinates are constantly updated.
+        this.canvas.addEventListener("pointermove", (e) => {
+            const bounds = this.canvas.getBoundingClientRect();
+            mouseCoords =  {x: ((e.clientX - bounds.left) * 960) / bounds.width - 480,
+                            y: 360 - ((e.clientY - bounds.top) * 960) / bounds.width};
+        });
+    },
+    setupKeys: function() {
         // An integer array is used for checking key presses to allow for WASD or arrow keys. Key
         // codes are used in case someone uses a different keyboard layout (i.e. ZQSD can work for
         // someone with an AZERTY keyboard layout).
-
         gameArea.keys = [0, 0, 0, 0];
         window.addEventListener('keydown', function (e) {
             if (e.repeat) return;
             switch (e.code) {
+                case "KeyM":
+                    muted = !muted;
+                    break;
                 case "KeyW":
                 case "ArrowUp":
                     gameArea.keys[0]++;
@@ -111,11 +164,22 @@ var gameArea = {
         window.addEventListener("blur", () => {
             gameArea.keys = [0, 0, 0, 0];
         });
-        
-        this.interval = setInterval(updateGameArea, 16.6667);
     },
-    clear : function() {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    clear: function() {
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+// Plays sound, looking up string in soundEffects and setting volume
+function playSound(key, volume=1) {
+    if (muted) return;
+    try {
+        const sound = soundEffects[key];
+        sound.currentTime = 0;
+        sound.volume = volume;
+        sound.play();
+    } catch (error) {
+        console.error("Sound not found");
     }
 }
 
@@ -226,20 +290,41 @@ function player(x=0, y=0) {
         const nod = (levelState != "failed") * 2 * fullScale * Math.sin(timer * Math.PI * 1.5);
         const height = mainPlayer.circ.y + (3 * fullScale) + nod + mainPlayer.speedY * 1.333;
 
-        // A blink timer is used to either draw circles or thin rectangles where eyes are located.
-        if ((timer < mainPlayer.blink || timer > mainPlayer.blink + 0.06) && levelState == "none") {
+        // A blink timer is used to either draw eyes where they are located.
+        const notBlinking = timer < mainPlayer.blink || timer > mainPlayer.blink + 0.06;
+        const levelCompleteStart = levelState == "complete" && timer - endTime < 0.25;
+
+        // Eye shapes are prepared.
+        circleEye = (offset) => {centerFillCirc(middle + offset * fullScale, height, 3.2 * fullScale);};
+        lineEye = (offset, angle) => {centerFillRect(middle + offset * fullScale, height, 9.6 * fullScale, 2 * fullScale, angle);};
+        arcEye = function(offset) {
+            ctx.beginPath();
+            ctx.arc((middle + offset * fullScale) + 480, 360 - height - 1.6 * fullScale, 3.2 * fullScale, 0, Math.PI);
+            ctx.lineWidth = 2 * fullScale;
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+        }
+
+        if (notBlinking && (levelState == "none" || levelCompleteStart)) {
+            // After a blink, the blink timer is reset, with circle eyes drawn.
             if (timer > mainPlayer.blink) mainPlayer.blink += 3.1 + 2 * Math.random();
-            centerFillCirc(middle - 5.6 * fullScale, height, 3.2 * fullScale);
-            centerFillCirc(middle + 5.6 * fullScale, height, 3.2 * fullScale);
+            circleEye(-5.6);
+            circleEye(5.6);
         } else {
-            lineEyes = function(angle=0) {
-                centerFillRect(middle - 5.6 * fullScale, height, 8.4 * fullScale, 1.5 * fullScale, angle);
-                centerFillRect(middle + 5.6 * fullScale, height, 8.4 * fullScale, 1.5 * fullScale, angle);
-            }
             if (levelState == "failed") {
-                lineEyes(-45);
-                lineEyes(45);
-            } else lineEyes();
+                // Draw X-shaped eyes.
+                lineEye(-5.6, -45);
+                lineEye(-5.6, 45);
+                lineEye(5.6, -45);
+                lineEye(5.6, 45);
+            } else if (levelState == "complete") {
+                // Draw one eye winking.
+                circleEye(-5.6);
+                arcEye(5.6);
+            } else {
+                arcEye(-5.6);
+                arcEye(5.6);
+            }
         }
     } 
     this.setup();
@@ -265,6 +350,7 @@ function goal(x=0, y=0){
 
 // Fills a rectangle based on preferred coordinate system, and optional angle.
 function centerFillRect(x, y, width, height, angle = 0) {
+    ctx.beginPath();
     if (angle != 0) {
         ctx.save();
         ctx.translate(x + 480, 360 - y);        
@@ -274,10 +360,21 @@ function centerFillRect(x, y, width, height, angle = 0) {
     } else ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
 }
 
-// Fills a circle for convenience.
+// Fills a circle based on preferred coordinate system.
 function centerFillCirc(x, y, radius) {
+    ctx.beginPath();
     ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
     ctx.fill();
+}
+
+// Fills text based on preferred coordinate system.
+function drawText(text="Hello!", x=0, y=0, size=48, color="black", align="center") {
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.font = size + "px Fredoka, Tahoma, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = align;
+    ctx.fillText(text, x + 480, 360 - y);
 }
 
 // Returns the distance between two points, squared to prevent square root computation.
@@ -317,20 +414,54 @@ function inShape(mainPoint, mainShape) {
     return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
 }
 
+function startMenu() {
+    // Create a menu of only a single play button.
+    let playButton = new rect(360, 200);
+    playButton.angle = 3 * Math.cos(timer * Math.PI) * Math.PI / 180;
+    playButton.color = "red";
+    playButton.update();
+    drawText("Play", 0, 0, 120);
+
+    // Check if mouse is intersecting button.
+    clickable = inShape(mouseCoords, playButton);
+    console.log(clickable);
+}
+
 function updateGameArea() {
-    ctx = gameArea.context;
     gameArea.clear();
     timer = Date.now() / 1000 - timerStart;
+    gameMusic.volume = muted ? 0 : 0.2;
 
+    // Background shapes, if any, are always drawn first.
+    backgroundShapes.forEach(element => {element.update()});
+
+    // Gameplay logic will only run during a level.
+    switch (gameState) {
+        case "none":
+            startMenu();
+            break;
+        case "menu":
+            menuLogic();
+            break;
+        case "level":
+            levelLogic();
+            break;
+    }
+}
+
+function menuLogic() {
+    // Each element, including in arrays, is drawn.
+    menuButtons.forEach(element => {element.update()});
+}
+
+function levelLogic() {
     // There was a bug where a key could somehow "jam" with a value of -1. This clamps
     // the value between 0 and 2 to resolve it.
-    // console.log(gameArea.keys[0] + " " + gameArea.keys[1] + " " + gameArea.keys[2] + " " + gameArea.keys[3]);
     for (let i = 0; i < 4; i++) {
         gameArea.keys[i] = Math.min(Math.max(gameArea.keys[i], 0), 2);
     }
-    
+
     // Each element, including in arrays, is drawn.
-    redBG.update();
     safeArea.forEach(element => {element.update()});
     obstacles.forEach(element => {element.update()});
 
@@ -343,6 +474,8 @@ function updateGameArea() {
         mainPlayer.controllable = false; 
         levelState = "failed";
         endTime = timer;
+        playSound("hit");
+        playSound("ouch");
     }
 
     // If player is close enough to the goal, the level is officially completed.
@@ -351,6 +484,8 @@ function updateGameArea() {
         mainPlayer.controllable = false; 
         levelState = "complete";
         endTime = timer;
+        setTimeout(playSound, 250, "wink");
+        playSound("enter");
     }
 
     // When the level is over, an animation is played before the level is reloaded.
