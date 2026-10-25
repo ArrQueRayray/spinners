@@ -24,7 +24,7 @@ canvas {
 // intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
 
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
-var ctx, backgroundShapes = [], menuButtons = [];
+var ctx, BGShapes = [], menuButtons = [];
 var mainPlayer, mainGoal, safeArea, obstacles;
 var levels = {}, mouseCoords = {x: -999, y: -999};
 fetchLevels();
@@ -34,7 +34,7 @@ var gameMusic = new Audio("assets/audio/spinners.ogg");
 gameMusic.preload = true;
 gameMusic.loop = true;
 gameMusic.volume = 0.2;
-const soundEffects = {
+let soundEffects = {
     click: new Audio("assets/audio/click.wav"),
     enter: new Audio("assets/audio/enter.wav"),
     hit: new Audio("assets/audio/hit.wav"),
@@ -43,10 +43,10 @@ const soundEffects = {
 };
 
 // Declare and/or initialize other gameplay states and properties.
-var muted = false, clickable = false;
+var muted = false, clickable = "none";
 let gameState = "none", levelState = "none";
-let timerStart = Date.now() / 1000, timer = 0, endTime = 0;
-let hDist, hDiag, scale;
+let timerStart = Date.now() / 1000, timer = 0, levelEndTime = 0;
+let hDist, hDiag, gameScale;
 
 // Setup font to be used in-game.
 const mainFont = new FontFace("Fredoka", 'url(assets/misc/Fredoka.ttf)');
@@ -54,6 +54,27 @@ mainFont.load().then((font) => {document.fonts.add(font)});
 
 // Starts game by starting game area.
 function startGame() {
+    BGShapes = [
+        new rect(480, 480, 0.5, -440, 320, Math.random() * 360),
+        new rect(480, 480, -0.5, 440, 320, Math.random() * 360),
+        new rect(480, 480, -0.5, -440, -320, Math.random() * 360),
+        new rect(480, 480, 0.5, 440, -320, Math.random() * 360),
+        new rect(300, 300, 0.5, -480, 160, Math.random() * 360),
+        new rect(300, 300, -0.5, 480, 160, Math.random() * 360),
+        new rect(300, 300, -0.5, 160, 360, Math.random() * 360),
+        new rect(300, 300, 0.5, 160, -360, Math.random() * 360),
+        new rect(300, 300, -0.5, -480, -160, Math.random() * 360),
+        new rect(300, 300, 0.5, 480, -160, Math.random() * 360),
+        new rect(300, 300, 0.5, -160, 360, Math.random() * 360),
+        new rect(300, 300, -0.5, -160, -360, Math.random() * 360),
+        new rect(240, 240, 0.5, 0, 0, Math.random() * 360),
+        new rect(240, 240, -0.5, 0, 0, Math.random() * 360)
+    ];
+    for (let i = 0; i < BGShapes.length; i++) {
+        const alpha = (i < 4) ? 0.5 : (i < 12) ? 0.25 : 0.125;
+        BGShapes[i].speed *= Math.random() + 0.5;
+        BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
+    }
     gameArea.start();
 }
 
@@ -68,7 +89,7 @@ async function fetchLevels() {
 
 // Loads objects separately from starting game, allowing for reload without reloading page.
 function loadLevel(level) {
-    timerStart = Date.now() / 1000, timer = 0, endTime = 0;
+    timerStart = Date.now() / 1000, timer = 0, levelEndTime = 0;
     gameState = "level";
     levelState = "none";
 
@@ -77,7 +98,7 @@ function loadLevel(level) {
         const loadedLevel = levels[level];
 
         // Scale determines player and goal size.
-        scale = Object.hasOwn(loadedLevel, "scale") ? loadedLevel.scale: 1;
+        gameScale = Object.hasOwn(loadedLevel, "scale") ? loadedLevel.scale: 1;
 
         // All planned levels have a solid red background, and some may have text.
         if (Object.hasOwn(loadedLevel, "text")) {
@@ -85,9 +106,24 @@ function loadLevel(level) {
             const size = Object.hasOwn(obj, "size") ? obj.size : 36;
             const color = Object.hasOwn(obj, "color") ? obj.color : "black";
             const align = Object.hasOwn(obj, "align") ? obj.align : "center";
-            backgroundShapes = [new rect(960, 720), new text(obj.string, obj.x, obj.y, size, color, align)];
-        } else backgroundShapes = [new rect(960, 720)];
-        backgroundShapes[0].color = "red";
+            BGShapes = new Array(18);
+            BGShapes[17] = new text(obj.string, obj.x, obj.y, size, color, align);
+        } else BGShapes = new Array(17);
+        BGShapes[0] = new rect(960, 720);
+        BGShapes[0].color = "red";
+        BGShapes[0].main = true;
+
+        for (let i = 1; i <= 16; i++) {
+            BGShapes[i] = new rect(60 + Math.random() * 400);
+            BGShapes[i].height = BGShapes[i].width;
+            BGShapes[i].x = Math.random() * 320 - 160;
+            BGShapes[i].y = Math.random() * 240 - 120;
+            BGShapes[i].x += (i % 4 * (640 / 3)) - 320;
+            BGShapes[i].y += (Math.ceil(i / 4 - 1) * 160) - 240;
+            BGShapes[i].angle = Math.random() * 360;
+            BGShapes[i].speed = (Math.random() + 0.5) * (Math.round(Math.random()) - 0.5);
+            BGShapes[i].color = "rgba(255, 0, 0, " + (Math.ceil(Math.random() * 4) / 32) + ")";
+        }
 
         // Player and goal are stored as variables, given defined coordinates
         mainPlayer = new player(loadedLevel.player.x, loadedLevel.player.y);
@@ -142,12 +178,12 @@ var gameArea = {
         // The mouse is used to guarantee focus on the window, allowing for sound playback, and
         // eventually interacting with menu buttons.
         window.addEventListener('mousedown', function (e) {
-            if (clickable) {
+            if (clickable != "none") {
                 playSound("click", 0.4);
+                clickable = "none";
                 if (gameState == "none") {
-                    clickable = false;
-                    gameMusic.play();
-                    loadLevel("level1");
+                    menuButtons[0].endTime = timer;
+                    animateButton(menuButtons[0]);
                 }
             }
         });
@@ -221,10 +257,10 @@ var gameArea = {
 function playSound(key, volume=1) {
     if (muted) return;
     try {
-        const sound = soundEffects[key];
-        sound.currentTime = 0;
-        sound.volume = volume;
-        sound.play();
+        const soundCheck = soundEffects[key];
+        soundEffects[key].currentTime = 0;
+        soundEffects[key].volume = volume;
+        soundEffects[key].play();
     } catch (error) {
         console.error("Sound not found");
     }
@@ -286,7 +322,7 @@ function text(string="Hello!", x=0, y=0, size=36, color="black", align="center")
 
 // Creates a player component, with circle and additional features such as movement and animation.
 function player(x=0, y=0) {
-    this.circ = new circ(16 * scale, x, y, "cyan");
+    this.circ = new circ(16 * gameScale, x, y, "cyan");
     this.playerScale = 1;
     this.hitboxScale = 0.75; // Smaller hitboxes feel fairer; this specifies hitbox scale compared to player size.
     this.speedX = 0;
@@ -299,9 +335,9 @@ function player(x=0, y=0) {
         hDiag = hDist * Math.SQRT1_2;
     }
     this.update = function() {
-        this.circ.radius = Math.max(0, 16 * scale * this.playerScale);
-        const accel = 0.5 * scale; // How fast the player reaches max speed.
-        const maxSpeed = 3.6 * scale; // The fastest the player can travel.
+        this.circ.radius = Math.max(0, 16 * gameScale * this.playerScale);
+        const accel = 0.5 * gameScale; // How fast the player reaches max speed.
+        const maxSpeed = 3.6 * gameScale; // The fastest the player can travel.
         const moving = (!!gameArea.keys[1] !== !!gameArea.keys[3]) || (!!gameArea.keys[0] !== !!gameArea.keys[2]);
 
         // Change speed variables based on pressed keys.
@@ -348,7 +384,7 @@ function player(x=0, y=0) {
     this.drawEyes = function() {
         ctx.beginPath(); 
         ctx.fillStyle = "black";
-        const fullScale = scale * this.playerScale;
+        const fullScale = gameScale * this.playerScale;
 
         // The coordinates of the midpoint of the eyes is calculated along with a nod animation.
         const middle = mainPlayer.circ.x + mainPlayer.speedX * 1.333;
@@ -357,7 +393,7 @@ function player(x=0, y=0) {
 
         // A blink timer is used to either draw eyes where they are located.
         const notBlinking = timer < mainPlayer.blink || timer > mainPlayer.blink + 0.06;
-        const levelCompleteStart = levelState == "complete" && timer - endTime < 0.25;
+        const levelCompleteStart = levelState == "complete" && timer - levelEndTime < 0.25;
 
         // Eye shapes are prepared.
         circleEye = (offset) => {centerFillCirc(middle + offset * fullScale, height, 3.2 * fullScale);};
@@ -400,13 +436,13 @@ function goal(x=0, y=0){
     this.rects = [0, 0, 0];
     this.goalScale = 1;
     for (let i = 0; i < 3; i++) {
-        this.rects[i] = new rect(36 * scale * this.goalScale, 36 * scale * this.goalScale, 2, x, y, i * 30 - 15, "rgba(255, 255, 255, 0.5)");
+        this.rects[i] = new rect(36 * gameScale * this.goalScale, 36 * gameScale * this.goalScale, 2, x, y, i * 30 - 15, "rgba(255, 255, 255, 0.5)");
     }
     this.update = function() {
         ctx.beginPath();
         for (let i = 0; i < 3; i++) {
             this.rects[i].width = 36 + (12 - 3 * i) * Math.sin(timer * Math.PI * 2 + (i * 3 * Math.PI / 4));
-            this.rects[i].width *= scale * this.goalScale;
+            this.rects[i].width *= gameScale * this.goalScale;
             this.rects[i].height = this.rects[i].width;
             this.rects[i].update();
         }
@@ -465,31 +501,101 @@ function inCirc(mainPoint, mainCirc) {
     return sqDist(mainPoint.x, mainPoint.y, mainCirc.x, mainCirc.y) <= mainCirc.radius * mainCirc.radius;;
 }
 
+// Returns true if mainPoint is in mainShape (rect or circ).
 function inShape(mainPoint, mainShape) {
     return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
 }
 
+// Handles logic for start screen.
 function startMenu() {
-    // Create a menu of only a single play button.
-    let playButton = new rect(360, 200);
-    playButton.angle = 3 * Math.cos(timer * Math.PI) * Math.PI / 180;
-    playButton.color = "red";
-    playButton.text = new text("Play", 0, 0, 120);
-    playButton.update();
-    playButton.text.update();
+    // Background shapes, if any, are always drawn first.
+    BGShapes.forEach(element => {element.update()});
 
-    // Check if mouse is intersecting button.
-    clickable = inShape(mouseCoords, playButton);
-    console.log(clickable);
+    // Create a menu of only a single play button.
+    if (!menuButtons || !menuButtons[0]?.animating) {
+        menuButtons = [new rect(360, 200)];
+        menuButtons[0].angle = 3 * Math.cos(timer * Math.PI) * Math.PI / 180;
+        menuButtons[0].text = new text("Play", 0, 0, 120);
+        menuButtons[0].update();
+        menuButtons[0].text.update();
+        menuButtons[0].animating = false;
+
+        // Check if mouse is intersecting button.
+        clickable = "none";
+        if (inShape(mouseCoords, menuButtons[0])) clickable = "play";
+    } else {
+        if (!animateButton(menuButtons[0]) && !fadeOutBG(menuButtons[0].endTime + 0.25)) {
+            BGShapes = [];
+            gameMusic.play();
+            loadLevel("level1");
+        }
+    }
 }
 
+// Animates a button fading out as it is clicked
+function animateButton(button) {
+    const timeSinceEnd = timer - button.endTime;
+
+    // Return false when animation is over.
+    if (timeSinceEnd >= 0.25) return false;
+
+    button.animating = true;
+    button.scale = Math.max(0, 1 - 4 * timeSinceEnd * timeSinceEnd);
+    const opacity = 4 * button.scale - 3;
+    const colorVal = 255 * opacity;
+    
+    // Fade by controlling color directly; all buttons are red and 100% opacity.
+    button.color = "rgba(255, " + colorVal + ", " + colorVal + ", " + opacity + ")";
+    button.text.color = "rgba(0, 0, 0, " + opacity + ")";
+    updateButtonScale(button);
+    return true;
+}
+
+// Animates BG fading out.
+function fadeOutBG(endTime) {
+    const timeSinceEnd = timer - endTime;
+    gameArea.clear();
+
+    // Return false when animation is over.
+    if (timeSinceEnd >= 0.5) return false;
+
+    // Fade by setting global alpha and redrawing; BG is always drawn first.
+    const opacity = Math.max(0, (2 * timeSinceEnd - 1) * (2 * timeSinceEnd - 1));
+    BGShapes.forEach((shape) => {
+        let temp;
+        if (shape?.speed) temp = shape.speed;
+        ctx.globalAlpha = opacity;
+        if (shape?.speed) shape.speed = 0;
+        shape.update();
+        if (typeof temp !== 'undefined') shape.speed = temp;
+        ctx.globalAlpha = 1;
+    });
+    return true;
+}
+
+// Updates button to match scale property.
+function updateButtonScale (button) {
+    button.width *= button.scale;
+    button.height *= button.scale;
+    button.text.size *= button.scale;
+    button.update();
+    button.text.update();
+    if (button.scale > 0) {
+        button.width /= button.scale;
+        button.height /= button.scale;
+        button.text.size /= button.scale;
+    }
+}
+
+function setupMainMenu() {
+
+}
+
+// Updates the canvas every frame.
 function updateGameArea() {
     gameArea.clear();
     timer = Date.now() / 1000 - timerStart;
     gameMusic.volume = muted ? 0 : 0.2;
-
-    // Background shapes, if any, are always drawn first.
-    backgroundShapes.forEach(element => {element.update()});
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
@@ -505,21 +611,32 @@ function updateGameArea() {
     }
 }
 
+// Handles logic for menu beyond start screen.
 function menuLogic() {
+    // Background shapes, if any, are always drawn first.
+    BGShapes.forEach(element => {element.update()});
+
     // Each element, including in arrays, is drawn.
     menuButtons.forEach(element => {element.update()});
 }
 
+// Handles logic for gameplay.
 function levelLogic() {
-    // There was a bug where a key could somehow "jam" with a value of -1. This clamps
-    // the value between 0 and 2 to resolve it.
+    // Only the first shape is drawn first.
+    BGShapes[0].update();
+
+    // This clamps each value in the keys array between 0 and 2.
     for (let i = 0; i < 4; i++) {
         gameArea.keys[i] = Math.min(Math.max(gameArea.keys[i], 0), 2);
     }
 
     // Each element, including in arrays, is drawn.
-    safeArea.forEach(element => {element.update()});
-    obstacles.forEach(element => {element.update()});
+    safeArea.forEach(element => {element.update();});
+
+    // The rest of the background shapes are drawn.
+    BGShapes.forEach(element => {if (!element?.main) element.update();});
+
+    obstacles.forEach(element => {element.update();});
 
     // Goal and player are drawn last.
     mainGoal.update();
@@ -529,17 +646,17 @@ function levelLogic() {
     if (!playerIsAlive() && levelState == "none") {
         mainPlayer.controllable = false; 
         levelState = "failed";
-        endTime = timer;
+        levelEndTime = timer;
         playSound("hit");
         playSound("ouch");
     }
 
     // If player is close enough to the goal, the level is officially completed.
     const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, mainGoal.rects[0].x, mainGoal.rects[0].y);
-    if (sqGoalDist < 1296 * scale * scale && levelState == "none") {
+    if (sqGoalDist < 1296 * gameScale * gameScale && levelState == "none") {
         mainPlayer.controllable = false; 
         levelState = "complete";
-        endTime = timer;
+        levelEndTime = timer;
         setTimeout(playSound, 250, "wink");
         playSound("enter");
     }
@@ -609,15 +726,15 @@ function playerIsAlive() {
 function levelCompleteAnimation() {
     const dx = mainGoal.rects[0].x - mainPlayer.circ.x;
     const dy = mainGoal.rects[0].y - mainPlayer.circ.y;
-    const timeSinceEnd = timer - endTime;
+    const timeSinceEnd = timer - levelEndTime;
     if (timeSinceEnd < 0.75) {
         mainPlayer.circ.x += dx * timeSinceEnd * 0.3;
         mainPlayer.circ.y += dy * timeSinceEnd * 0.3;
-        scale = 7.7 * Math.sin((timeSinceEnd / 0.75) + 1.2) - 6.2;
+        gameScale = 7.7 * Math.sin((timeSinceEnd / 0.75) + 1.2) - 6.2;
         mainGoal.goalScale = 2 * Math.sin((timeSinceEnd / 0.75) * 5 * Math.PI / 6 + Math.PI / 6);
         return false;
     } else {
-        scale = 0;
+        gameScale = 0;
         mainGoal.goalScale = 0;
         return timeSinceEnd >= 1.25;
     }
@@ -625,7 +742,7 @@ function levelCompleteAnimation() {
 
 // Animate player dying, returning true 0.5 seconds after animation is complete.
 function levelFailedAnimation() {
-    const timeSinceEnd = timer - endTime;
+    const timeSinceEnd = timer - levelEndTime;
     mainPlayer.circ.color = "rgba(0, 255, 255, " + (1 - timeSinceEnd / 0.5) + ")";
     if (timeSinceEnd < 0.5) {
         mainPlayer.playerScale = 7.7 * Math.sin((timeSinceEnd / 0.5) + 1.2) - 6.2;
