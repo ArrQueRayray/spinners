@@ -39,12 +39,70 @@
         ]
     },
     "level2": {
-        "name": "Test",
-        "text": {"x": 0, "y": 300,
-            "string": "This is a test different level."
+        "name": "Test3",
+        "text": {"x": -125, "y": 287.5,
+            "string": "Yet another level, for testing purposes."
         },
-        "player": {"x": 300, "y": 0},
-        "goal": {"x": -300, "y": 0},
+        "player": {"x": 260, "y": 170},
+        "goal": {"x": -260, "y": -170},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": -150, "y": 30,
+                "radius": 180
+            },
+            {
+                "type": "circ",
+                "x": 150, "y": -30,
+                "radius": 180
+            },
+            {
+                "type": "rect", 
+                "x": -260, "y": -170,
+                "width": 150, "height": 150,
+                "angle": 30
+            },
+            {
+                "type": "rect", 
+                "x": 260, "y": 170,
+                "width": 150, "height": 150,
+                "angle": 30
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 150, "y": -30,
+                "width": 362, "height": 24, 
+                "speed": 1.375, "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 150, "y": -30,
+                "width": 362, "height": 24, 
+                "speed": 1.375, "angle": 135
+            },
+            {
+                "type": "rect", 
+                "x": -150, "y": 30,
+                "width": 362, "height": 24, 
+                "speed": -1.375, "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": -150, "y": 30,
+                "width": 362, "height": 24, 
+                "speed": -1.375, "angle": 135
+            }
+        ]
+    },
+    "level3": {
+        "name": "Testing more",
+        "text": {"x": 350, "y": -100,
+            "string": "Also a test."
+        },
+        "player": {"x": -324.75, "y": -187.5},
+        "goal": {"x": 324.75, "y": 187.5},
         "safeArea": [
             {
                 "type": "circ",
@@ -53,13 +111,15 @@
             },
             {
                 "type": "rect", 
-                "x": -270, "y": 0,
-                "width": 180, "height": 180
+                "x": 0, "y": 0,
+                "width": 900, "height": 150,
+                "angle": -30
             },
             {
                 "type": "rect", 
-                "x": 270, "y": 0, 
-                "width": 180, "height": 180
+                "x": 0, "y": 0,
+                "width": 640, "height": 150,
+                "angle": -120
             }
         ],
         "obstacles": [
@@ -67,25 +127,12 @@
                 "type": "rect", 
                 "x": 0, "y": 0, 
                 "width": 482, "height": 24, 
-                "speed": 1, "angle": 0
+                "speed": 2, "angle": 0
             },
             {
-                "type": "rect", 
+                "type": "circ",
                 "x": 0, "y": 0, 
-                "width": 482, "height": 24, 
-                "speed": 1, "angle": 90
-            },
-            {
-                "type": "rect", 
-                "x": 0, "y": 0, 
-                "width": 482, "height": 24, 
-                "speed": 1, "angle": 45
-            },
-            {
-                "type": "rect", 
-                "x": 0, "y": 0, 
-                "width": 482, "height": 24, 
-                "speed": 1, "angle": 135
+                "radius": 120
             }
         ]
     }
