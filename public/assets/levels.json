@@ -1,9 +1,11 @@
 {
-    "level1": {
-        "name": "Spinners",
-        "text": {"x": 0, "y": 300,
-            "string": "Use WASD or arrow keys to reach the goal."
-        },
+    "Level 1": {
+        "name": "Spinner",
+        "text": [
+            {"x": 0, "y": 300, "size": 48,
+                "string": "Use WASD or arrow keys to reach the goal."
+            }
+        ],
         "player": {"x": -300, "y": 0},
         "goal": {"x": 300, "y": 0},
         "safeArea": [
@@ -29,20 +31,225 @@
                 "x": 0, "y": 0, 
                 "width": 482, "height": 24, 
                 "speed": 1, "angle": 0
-            },
-            {
-                "type": "rect", 
-                "x": 0, "y": 0, 
-                "width": 482, "height": 24, 
-                "speed": 1, "angle": 90
             }
         ]
     },
-    "level2": {
+    "Level 2": {
+        "name": "Spinners",
+        "scale": 0.75,
+        "text": [
+            {"x": 215, "y": 215, "size": 48,
+                "string": "Try not to touch\n the red stuff."
+            },
+            {"x": -215, "y": -215, "size": 48,
+                "string": "It's very ouchy\n after all."
+            }
+        ],
+        "player": {"x": -87.82, "y": 235.87},
+        "goal": {"x": 87.82, "y": -235.87},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": -180, "y": 60,
+                "radius": 150
+            },
+            {
+                "type": "circ",
+                "x": 180, "y": -60,
+                "radius": 150
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 360, "height": 150,
+                "angle": 20
+            },
+            {
+                "type": "rect", 
+                "x": 100, "y": -220,
+                "width": 120, "height": 150,
+                "angle": 37.5
+            },
+            {
+                "type": "rect", 
+                "x": -100, "y": 220,
+                "width": 120, "height": 150,
+                "angle": 37.5
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 180, "y": -60,
+                "width": 302, "height": 18, 
+                "speed": 1.25, "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 180, "y": -60,
+                "width": 302, "height": 18, 
+                "speed": 1.25, "angle": 135
+            },
+            {
+                "type": "rect", 
+                "x": -180, "y": 60,
+                "width": 302, "height": 18, 
+                "speed": -1.25, "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": -180, "y": 60,
+                "width": 302, "height": 18, 
+                "speed": -1.25, "angle": 135
+            }
+        ]
+    },
+    "Level 3": {
+        "name": "Stay safe",
+        "scale": 1.25,
+        "text": [
+            {"x": -355, "y": 87.5, "size": 48,
+                "string": "If you\ncan't\noutrun\n it..."
+            },
+            {"x": 355, "y": -87.5, "size": 48,
+                "string": "...take\na brief\nmoment\n to hide."
+            }
+        ],
+        "player": {"x": -324.75, "y": -187.5},
+        "goal": {"x": 324.75, "y": 187.5},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 240
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 900, "height": 150,
+                "angle": -30
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 675, "height": 150,
+                "angle": -120
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0, 
+                "width": 482, "height": 30, 
+                "speed": 2.375, "angle": 90
+            },
+            {
+                "type": "circ",
+                "x": 0, "y": 0, 
+                "radius": 120
+            }
+        ]
+    },
+    "Level 4": {
+        "name": "Rectangle loop",
+        "scale": 1,
+        "text": [
+            {"x": 0, "y": 0, "size": 72,
+                "string": "Have fun!"
+            }
+        ],
+        "player": {"x": -400, "y": 300},
+        "goal": {"x": 400, "y": -300},
+        "safeArea": [
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 800, "height": 600
+            },
+            {
+                "type": "rect",
+                "x": -375, "y": 275,
+                "width": 150, "height": 150
+            },
+            {
+                "type": "rect",
+                "x": 375, "y": -275,
+                "width": 150, "height": 150
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 400, "height": 200
+            },
+            {
+                "type": "rect", 
+                "x": -300, "y": 0,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": -300, "y": 200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": -300, "y": -200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": -100, "y": 200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": -100, "y": -200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 100, "y": 200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 100, "y": -200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 300, "y": 0,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 300, "y": 200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 300, "y": -200,
+                "width": 202, "height": 18, 
+                "speed": 0.75, "angle": 0
+            }
+        ]
+    },
+    "Level 7": {
         "name": "Test3",
-        "text": {"x": -125, "y": 287.5,
+        "text": [{"x": -125, "y": 287.5,
             "string": "Yet another level, for testing purposes."
-        },
+        }],
         "player": {"x": 260, "y": 170},
         "goal": {"x": -260, "y": -170},
         "safeArea": [
@@ -96,43 +303,88 @@
             }
         ]
     },
-    "level3": {
-        "name": "Testing more",
-        "text": {"x": 350, "y": -100,
-            "string": "Also a test."
-        },
-        "player": {"x": -324.75, "y": -187.5},
-        "goal": {"x": 324.75, "y": 187.5},
+    "Level 16": {
+        "name": "Test4",
+        "text": [
+            {"x": -380, "y": 210,
+                "string": "Test text\nwith\nnew lines!"
+            },
+            {"x": 350, "y": -240,
+                "string": "Multiple text\nobjects, wowie!"
+            },
+            {"x": 0, "y": -280, "size": 96,
+                "string": "Big text!"
+            },
+            {"x": 135, "y": 280, "size": 24, "align": "right",
+                "string": "This text is not only small, but\nit is right-aligned as well, and that\nworks just fine!"
+            }
+        ],
+        "player": {"x": 260, "y": 170},
+        "goal": {"x": -260, "y": -170},
         "safeArea": [
             {
                 "type": "circ",
-                "x": 0, "y": 0,
-                "radius": 240
+                "x": -150, "y": 30,
+                "radius": 180
+            },
+            {
+                "type": "circ",
+                "x": 150, "y": -30,
+                "radius": 180
             },
             {
                 "type": "rect", 
-                "x": 0, "y": 0,
-                "width": 900, "height": 150,
-                "angle": -30
+                "x": -260, "y": -170,
+                "width": 150, "height": 150,
+                "angle": 30
             },
             {
                 "type": "rect", 
-                "x": 0, "y": 0,
-                "width": 640, "height": 150,
-                "angle": -120
+                "x": 260, "y": 170,
+                "width": 150, "height": 150,
+                "angle": 30
             }
         ],
         "obstacles": [
             {
                 "type": "rect", 
-                "x": 0, "y": 0, 
-                "width": 482, "height": 24, 
-                "speed": 2, "angle": 0
+                "x": 150, "y": -30,
+                "width": 92, "height": 24, 
+                "speed": 2, "angle": 90,
+                "offset": {"x": 135, "y": 0}
             },
             {
-                "type": "circ",
-                "x": 0, "y": 0, 
-                "radius": 120
+                "type": "rect", 
+                "x": 150, "y": -30,
+                "width": 92, "height": 24, 
+                "speed": 2, "angle": 90,
+                "offset": {"x": -135, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 150, "y": -30,
+                "width": 182, "height": 24, 
+                "speed": -2, "angle": 90
+            },
+            {
+                "type": "rect", 
+                "x": -150, "y": 30,
+                "width": 92, "height": 24, 
+                "speed": 2, "angle": 0,
+                "offset": {"x": 135, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -150, "y": 30,
+                "width": 92, "height": 24, 
+                "speed": 2, "angle": 0,
+                "offset": {"x": -135, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -150, "y": 30,
+                "width": 182, "height": 24, 
+                "speed": -2, "angle": 0
             }
         ]
     }
