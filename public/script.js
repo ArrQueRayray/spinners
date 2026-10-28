@@ -5,8 +5,8 @@
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
 var ctx, BGShapes = [], FGShapes = [], menuButtons = [];
 var mainPlayer, mainGoal, safeArea, obstacles;
-var levels = {}, mouseCoords = {x: -999, y: -999};
-var currentLevel = 1;
+var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
+var currentLevel = 4;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
@@ -23,14 +23,16 @@ let soundEffects = {
 };
 
 // Declare and/or initialize other gameplay states and properties.
-var muted = false, clickable = "none";
+var muted = false, mouseTarget = -1, animTarget = -1;
 let gameState = "none", levelState = "none";
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
 
-// Setup font to be used in-game.
-const mainFont = new FontFace("Fredoka", 'url(assets/misc/Fredoka.ttf)');
+// Setup fonts to be used in-game.
+const mainFont = new FontFace("Francois One", 'url(assets/misc/FrancoisOne.ttf)');
+const logoFont = new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)');
 mainFont.load().then((font) => {document.fonts.add(font)});
+logoFont.load().then((font) => {document.fonts.add(font)});
 
 // Starts game by setting up BG/FG shapes, play button, and game area.
 function startGame() {
@@ -46,22 +48,19 @@ function startGame() {
         new rect(300, 300, -0.5, -480, -160, Math.random() * 360),
         new rect(300, 300, 0.5, 480, -160, Math.random() * 360),
         new rect(300, 300, 0.5, -160, 360, Math.random() * 360),
-        new rect(300, 300, -0.5, -160, -360, Math.random() * 360),
-        new rect(240, 240, 0.5, 0, 0, Math.random() * 360),
-        new rect(240, 240, -0.5, 0, 0, Math.random() * 360)
+        new rect(300, 300, -0.5, -160, -360, Math.random() * 360)
     ];
     for (let i = 0; i < BGShapes.length; i++) {
-        const alpha = (i < 4) ? 0.5 : (i < 12) ? 0.25 : 0.125;
+        const alpha = (i < 4) ? 0.5 : 0.25;
         BGShapes[i].speed *= Math.random() + 0.5;
         BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
     }
 
     FGShapes = [new rect(960, 720)];
-    FGShapes[FGShapes.length - 1].color = "rgba(0, 0, 0, 0)";
-    FGShapes[FGShapes.length - 1].duration = 1;
+    FGShapes[FGShapes.length - 1].color = "black";
     FGShapes[FGShapes.length - 1].transition = true;
 
-    menuButtons = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 120), "play")];
+    menuButtons = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
     gameArea.start();
 }
@@ -75,7 +74,7 @@ async function fetchLevels() {
     }
 }
 
-// Loads objects separately from starting game, allowing for reload without reloading page.
+// Loads objects and sets variables required for playing through a new level.
 function loadLevel(level) {
     // Setup timer and states
     timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
@@ -86,14 +85,14 @@ function loadLevel(level) {
 
     // Get desired level from levels.json if possible.
     try {
-        let loadedLevel = {"name": "Dummy level",
+        loadedLevel = {"name": "Dummy level",
             "text": [{"x": 0, "y": 100, "string": "Invalid level loaded."}],
             "player": {"x": -240, "y": 0}, "goal": {"x": 240, "y": 0},
             "safeArea": [{"type": "rect", "x": 0, "y": 0, "width": 600, "height": 120}],
             "obstacles": [{"type": "rect", "x": 0, "y": 0, "width": 122, "height": 24, "speed": 24}]};
 
         if (Object.hasOwn(levels, level)) {
-             loadedLevel = levels[level];
+            loadedLevel = levels[level];
         }
 
         // Scale determines player and goal size.
@@ -169,7 +168,7 @@ function loadLevel(level) {
     }
 }
 
-// Setup game area.
+// Setup game area and canvas scaling, alongside mouse and keyboard controls.
 var gameArea = {
     canvas: document.createElement("canvas"),
     start: function() {
@@ -195,13 +194,12 @@ var gameArea = {
         // The mouse is used to guarantee focus on the window, allowing for sound playback, and
         // eventually interacting with menu buttons.
         window.addEventListener('mousedown', function (e) {
-            if (clickable != "none") {
+            if (mouseTarget > -1) {
                 playSound("click", 0.4);
-                clickable = "none";
-                if (gameState == "none") {
-                    menuButtons[0].animStart = timer;
-                    menuButtons[0].animate(0.25);
-                }
+                animTarget = mouseTarget;
+                mouseTarget = -2;
+                menuButtons[animTarget].animStart = timer;
+                menuButtons[animTarget].animate(0.25);
             }
         });
 
@@ -275,7 +273,7 @@ var gameArea = {
     }
 }
 
-// Plays sound, looking up string in soundEffects and setting volume
+// Plays sound, looking up string in soundEffects and setting volume.
 function playSound(key, volume=1) {
     if (muted) return;
     try {
@@ -327,17 +325,18 @@ function circ(radius=40, x=0, y=0, color="black") {
 }
 
 // Creates a text component based on preferred coordinate system.
-function text(string="Hello!", x=0, y=0, size=36, color="black", align="center") {
+function text(string="Hello!", x=0, y=0, size=36, color="black", align="center", font="Francois One") {
     this.lines = string.split("\n");
     this.x = x;
     this.y = y; 
     this.size = size;
     this.color = color; 
     this.align = align; 
+    this.font = font;
     this.update = function() {
         ctx.beginPath();
         ctx.fillStyle = this.color;
-        ctx.font = this.size + "px Fredoka, Tahoma, sans-serif";
+        ctx.font = this.size + "px " + font + ", Tahoma, sans-serif";
         ctx.textBaseline = "middle";
         ctx.textAlign = this.align;
         let offset = (this.lines.length - 1) * size / 2;
@@ -464,7 +463,7 @@ function goal(x=0, y=0){
     this.rects = new Array(3);
     this.goalScale = 1;
     for (let i = 0; i < 3; i++) {
-        this.rects[i] = new rect(36 * gameScale * this.goalScale, 36 * gameScale * this.goalScale, 2, x, y, i * 30 - 15, "rgba(255, 255, 255, 0.5)");
+        this.rects[i] = new rect(36 * gameScale * this.goalScale, 36 * gameScale * this.goalScale, 2, x, y, i * 30 - 15, "#ffffff80");
     }
     this.update = function() {
         ctx.beginPath();
@@ -477,34 +476,51 @@ function goal(x=0, y=0){
     };
 }
 
-function button(x=0, y=0, shape, text, id) {
+// Creates a button component, with a given shape, clickable interactivity, and animation.
+function button(x=0, y=0, shape, text, id, squareSize) {
     this.x = x;
     this.y = y;
     this.shape = shape;
     this.text = text;
     this.text.x = x;
-    this.text.y = y;
+    this.text.y = y - (this.text.size / 16);
     this.shape.x = x;
     this.shape.y = y;
     this.id = id;
+    // Squares that appear behind the button for decorative purposes.
+    this.squares = [new rect(squareSize, squareSize, 0.5 * Math.random() + 0.25, x, y, Math.random() * 360),
+                    new rect(squareSize, squareSize, -0.5 * Math.random() - 0.25, x, y, Math.random() * 360)];
+    this.squares[0].color = "#ff000020";
+    this.squares[1].color = "#ff000020";
     this.animating = false;
     this.animStart = 0;
+    this.offset = 2 * Math.PI * Math.random();
+    this.status = "";
     this.update = function() {
+        this.shape.angle = 3 * Math.cos(timer * Math.PI / 2 + this.offset) * Math.PI / 180;
+        this.squares[0].update();
+        this.squares[1].update();
         this.shape.update();
         this.text.update();
     }
     this.check = function() {
-        if (inShape(mouseCoords, menuButtons[0].shape)){
-            clickable = menuButtons[0].id;
-            this.shape.color = "rgba(255, 64, 64, 1)";
-            this.text.color = "rgba(0, 0, 0, 0.75)";
+        // Check the button's status and if the mouse is hovering over it.
+        if (mouseTarget < -1) return;
+        if (this.status == "locked") {
+            this.shape.color = "#ff000020";
+            return;
+        }
+        if (inShape(mouseCoords, this.shape)){
+            mouseTarget = this.id;
+            this.shape.color = (this.status == "complete") ? "#80ffff" : "#ff4040";
+            this.text.color = "#000000c0";
         } else {
-            this.shape.color = "red";
+            this.shape.color = (this.status == "complete") ? "cyan" : "red";
             this.text.color = "black";
         }
     }
     this.animate = function(duration) {
-        // Animate a button fading out as it is clicked
+        // Animate a button fading out as it is clicked.
         const elapsedAmount = (timer - this.animStart) / duration;
 
         // Return false when animation is over.
@@ -515,7 +531,8 @@ function button(x=0, y=0, shape, text, id) {
         const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
         
         // Fade by controlling color directly; all buttons are red and 100% opacity.
-        this.shape.color = "rgba(255, " + colorVal + ", " + colorVal + ", " + (colorVal / 127) + ")";
+        if (this.status == "complete") this.shape.color = "rgba(" + colorVal + ", 255, 255, " + (colorVal / 127) + ")";
+        else this.shape.color = "rgba(255, " + colorVal + ", " + colorVal + ", " + (colorVal / 127) + ")";
         this.text.color = "rgba(0, 0, 0, " + (colorVal / 127 / 2) + ")";
 
         // Update button visuals to match scale property.
@@ -596,81 +613,127 @@ function inShape(mainPoint, mainShape) {
     return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
 }
 
+// Animates the FG fade.
+function animateFG(animStart, duration) {
+    const elapsedTime = timer - animStart;
+
+    // Return false when animation is over.
+    if (elapsedTime >= duration) return false;
+
+    FGShapes[FGShapes.length - 1].animStart = animStart;
+    FGShapes[FGShapes.length - 1].duration = duration;
+
+    return true;
+}
+
 // Handles logic for start screen.
 function startScreen() {
     // Background shapes, if any, are always drawn first.
     BGShapes.forEach(element => {element.update()});
 
     // The menu consists of only a single play button.
-    if (!menuButtons || !menuButtons[0]?.animating) {;
-        menuButtons[0].shape.angle = 3 * Math.cos(timer * Math.PI) * Math.PI / 180;
+    if (mouseTarget != -2) {
+        mouseTarget = -1;
         menuButtons[0].update();
 
         // Check if mouse is hovering over button.
-        clickable = "none";
         menuButtons[0].check();
     } else {
-        if (!menuButtons[0].animate(0.25) && !fadeOutBG(menuButtons[0].animStart + 0.25)) {
+        // Play button and fade animations until done.
+        const buttonAnimDone = !menuButtons[animTarget].animate(0.25);
+        const FGAnimDone = !animateFG(menuButtons[animTarget].animStart, 0.5);
+        if (buttonAnimDone && FGAnimDone) {
+            // Start music and switch to main menu.
             BGShapes = [];
             gameMusic.play();
-            FGShapes[FGShapes.length - 1].color = "black";
-            loadLevel("Level " + currentLevel)
-            // setupMainMenu();
+            setupMainMenu(true);
         }
     }
 }
 
-// Animates BG fading out.
-function fadeOutBG(animStart) {
-    const elapsedTime = timer - animStart;
-    gameArea.clear();
+// Loads in the main menu.
+function setupMainMenu(firstLoad) {
+    // Reset button-related variables and timer.
+    mouseTarget = -1;
+    animTarget = -1;
+    timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 
-    // Return false when animation is over.
-    if (elapsedTime >= 0.5) return false;
-
-    // Fade by setting global alpha and redrawing; BG is always drawn first.
-    const opacity = Math.max(0, (2 * elapsedTime - 1) * (2 * elapsedTime - 1));
-    BGShapes.forEach((shape) => {
-        let temp;
-        if (shape?.speed) temp = shape.speed;
-        ctx.globalAlpha = opacity;
-        if (shape?.speed) shape.speed = 0;
-        shape.update();
-        if (typeof temp !== 'undefined') shape.speed = temp;
-        ctx.globalAlpha = 1;
-    });
-    return true;
-}
-
-function setupMainMenu() {
-    BGShapes = [
-        new rect(300, 300, 0.5, -480, 360, Math.random() * 360),
-        new rect(300, 300, -0.5, 480, 360, Math.random() * 360),
-        new rect(300, 300, -0.5, -480, -360, Math.random() * 360),
-        new rect(300, 300, 0.5, 480, -360, Math.random() * 360),
-        new rect(180, 180, 0.5, -520, 120, Math.random() * 360),
-        new rect(180, 180, -0.5, 520, 120, Math.random() * 360),
-        new rect(180, 180, -0.5, 240, 400, Math.random() * 360),
-        new rect(180, 180, 0.5, 240, -400, Math.random() * 360),
-        new rect(180, 180, -0.5, -520, -120, Math.random() * 360),
-        new rect(180, 180, 0.5, 520, -120, Math.random() * 360),
-        new rect(180, 180, 0.5, -240, 400, Math.random() * 360),
-        new rect(180, 180, -0.5, -240, -400, Math.random() * 360)
-    ];
-    for (let i = 0; i < BGShapes.length; i++) {
-        const alpha = (i < 4) ? 0.25 : 0.125;
-        BGShapes[i].speed *= Math.random() + 0.5;
-        BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
+    // Setup background shapes on first load.
+    if (firstLoad) {
+        BGShapes = [
+            new rect(300, 300, 0.5, -480, 360, Math.random() * 360),
+            new rect(300, 300, -0.5, 480, 360, Math.random() * 360),
+            new rect(300, 300, -0.5, -480, -360, Math.random() * 360),
+            new rect(300, 300, 0.5, 480, -360, Math.random() * 360),
+            new rect(180, 180, 0.5, -520, 120, Math.random() * 360),
+            new rect(180, 180, -0.5, 520, 120, Math.random() * 360),
+            new rect(180, 180, -0.5, 240, 400, Math.random() * 360),
+            new rect(180, 180, 0.5, 240, -400, Math.random() * 360),
+            new rect(180, 180, -0.5, -520, -120, Math.random() * 360),
+            new rect(180, 180, 0.5, 520, -120, Math.random() * 360),
+            new rect(180, 180, 0.5, -240, 400, Math.random() * 360),
+            new rect(180, 180, -0.5, -240, -400, Math.random() * 360)
+        ];
+        for (let i = 0; i < BGShapes.length; i++) {
+            const alpha = (i < 4) ? 0.25 : 0.125;
+            BGShapes[i].speed *= Math.random() + 0.5;
+            BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
+        }
     }
 
+    // Setup menu buttons.
     menuButtons = [
-        new button(0, 0, new rect(360, 200), new text("Level Select", 0, 0, 120), "play"),
-        new button(0, 0, new rect(360, 200), new text("Clear Progress", 0, 0, 120), "clear"),
-        new button(0, 0, new rect(360, 200), new text("Credits", 0, 0, 120), "about"),
+        new button(-200, -30, new rect(320, 150), new text("Levels", 0, 0, 60), 0, 180),
+        new button(200, -30, new rect(320, 150), new text("Settings", 0, 0, 60), 1, 180),
+        new button(0, -225, new rect(320, 150), new text("Credits", 0, 0, 60), 2, 180),
     ];
 
-    // loadLevel("Level " + currentLevel);
+    // Setup foreground flas, along with logo on first load.
+    if (firstLoad) {
+        const flash = FGShapes[FGShapes.length - 1];
+        FGShapes = [
+            new text("Spınners", 0, 200, 150, "red", "center", "Paytone One"),
+            new rect(31, 31, 1, -121.5, 254.5),
+            flash
+        ];
+    }
+    FGShapes[FGShapes.length - 1].animStart = 0;
+    FGShapes[FGShapes.length - 1].duration = 0.5;
+
     gameState = "menu";
+}
+
+// Loads in the level select.
+function setupLevelSelect() {
+    // Reset button-related variables and timer.
+    mouseTarget = -1;
+    animTarget = -1;
+    timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
+
+    // Setup menu buttons; the BG shapes can stay.
+    menuButtons = new Array(31);
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 10; j++) {
+            const num = j + i * 10
+            menuButtons[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
+            if (num + 1 > currentLevel) {
+                menuButtons[num].status = "locked";
+                menuButtons[num].text.lines = [""];
+            }
+            if (num + 1 < currentLevel) {
+                menuButtons[num].status = "complete";
+                menuButtons[num].squares[0].color = "#00ffff20";
+                menuButtons[num].squares[1].color = "#00ffff20";
+            }
+        }
+    }
+    menuButtons[30] = new button(0, -300, new rect(200, 75), new text("Main Menu", 0, 0, 30), 30, 100);
+
+    // Setup foreground flash; the other FG shapes can stay.
+    FGShapes[FGShapes.length - 1].animStart = 0;
+    FGShapes[FGShapes.length - 1].duration = 0.5;
+
+    gameState = "select";
 }
 
 // Updates the canvas every frame.
@@ -686,6 +749,7 @@ function updateGameArea() {
             startScreen();
             break;
         case "menu":
+        case "select":
             menuLogic();
             break;
         case "level":
@@ -693,8 +757,9 @@ function updateGameArea() {
             break;
     }
 
-    // Foreground shapes, if any, are always drawn last. The first shape is delegated to fades.
+    // Foreground shapes, if any, are always drawn last. The last shape is delegated to fades.
     FGShapes.forEach(element => {
+        if (!element?.transition) element.update();
         if (element?.transition) {
             if (timer < element.animStart + element.duration) {
                 const elapsedAmount = (timer - element.animStart) / element.duration;
@@ -702,8 +767,10 @@ function updateGameArea() {
                 element.update();
                 ctx.globalAlpha = 1;
             }
-        } else element.update();
+        }
     });
+
+    console.log(mouseTarget);
 }
 
 // Handles logic for menu beyond start screen.
@@ -711,8 +778,58 @@ function menuLogic() {
     // Background shapes, if any, are always drawn first.
     BGShapes.forEach(element => {element.update()});
 
-    // Each element, including in arrays, is drawn.
-    menuButtons.forEach(element => {element.update()});
+    // Menu buttons are drawn, only allowing for clicks if mouseTarget is above -2.
+    if (mouseTarget != -2) {
+        mouseTarget = -1;
+        menuButtons.forEach(element => { 
+            element.update();
+
+            // Check if mouse is hovering over button.
+            element.check();
+        });
+        // On the level select, hovering over an unlocked level brings up its name.
+        if (gameState == "select") {
+            if (mouseTarget > -1 && mouseTarget != 30) {
+                const levelString = "Level " + (mouseTarget + 1);
+                if (Object.hasOwn(levels, levelString) && Object.hasOwn(levels[levelString], "name")) {
+                    const levelName = new text(levels[levelString].name, 0, 87.5, 30, "red", "center", "Paytone One");
+                    levelName.update();
+                }
+            }
+        }
+    } else {
+        // Once a button is clicked, the buttons continue to update as normal except for the clicked button,
+        // which animates alongside a fade before performng the button behavior.
+        menuButtons.forEach(element => { 
+            if (element.id == animTarget) {
+                const buttonAnimDone = !element.animate(0.25);
+                const FGAnimDone = !animateFG(element.animStart, 0.5);
+                if (buttonAnimDone && FGAnimDone) {
+                    if (gameState == "menu") {
+                        // The buttons on the main menu correspond to level select, settings, and credits.
+                        switch (element.id) {
+                            case 0: 
+                                setupLevelSelect();
+                                break;
+                            case 1:
+                                setupMainMenu(false); // TO-DO: Settings
+                                break;
+                            case 2:
+                                setupMainMenu(false); // TO-DO: Credits
+                                break;
+                        }
+                    } else if (gameState == "select") {
+                        // The buttons on the level select correspond to levels and the main menu.
+                        if (element.id == 30) {
+                            setupMainMenu(false);
+                        } else loadLevel("Level " + (element.id + 1));
+                    }
+                }
+            } else {
+                if (element.id != animTarget) element.update();
+            }
+        });
+    }
 }
 
 // Handles logic for gameplay.
