@@ -6,7 +6,7 @@
 var ctx, BGShapes = [], FGShapes = [], menuButtons = [];
 var mainPlayer, mainGoal, safeArea, obstacles;
 var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
-var currentLevel = 4;
+var currentLevel = 0, maxLevel = 1;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
@@ -34,7 +34,11 @@ const logoFont = new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)');
 mainFont.load().then((font) => {document.fonts.add(font)});
 logoFont.load().then((font) => {document.fonts.add(font)});
 
-// Starts game by setting up BG/FG shapes, play button, and game area.
+if (localStorage.getItem("maxLevel")) {
+    maxLevel = localStorage.getItem("maxLevel");
+}
+
+// Starts game by setting up shapes, play button, and game area.
 function startGame() {
     BGShapes = [
         new rect(480, 480, 0.5, -440, 320, Math.random() * 360),
@@ -53,7 +57,7 @@ function startGame() {
     for (let i = 0; i < BGShapes.length; i++) {
         const alpha = (i < 4) ? 0.5 : 0.25;
         BGShapes[i].speed *= Math.random() + 0.5;
-        BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
+        BGShapes[i].color = `rgba(255, 0, 0, ${alpha})`;
     }
 
     FGShapes = [new rect(960, 720)];
@@ -75,13 +79,19 @@ async function fetchLevels() {
 }
 
 // Loads objects and sets variables required for playing through a new level.
-function loadLevel(level) {
+function loadLevel(level, firstLoad) {
     // Setup timer and states
-    timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
-    gameState = "level";
-    levelState = "none";
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
+    gameState = "level", levelState = "none";
     FGShapes[FGShapes.length - 1].animStart = 0;
-    FGShapes[FGShapes.length - 1].duration = 1;
+    FGShapes[FGShapes.length - 1].duration = 0.5;
+    mouseTarget = animTarget = -1;
+
+    // If a first level load, setup the menu button.
+    if (firstLoad) {
+        menuButtons = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
+        menuButtons[0].status = "white";
+    }
 
     // Get desired level from levels.json if possible.
     try {
@@ -186,9 +196,11 @@ var gameArea = {
     },
     scaleCanvas: function() {
         const scale = Math.min(Math.max(this.canvas.getBoundingClientRect().height / 720 * 1.5, 1), 2);
-        this.canvas.width = 960 * scale;
-        this.canvas.height = 720 * scale;
-        ctx.scale(scale, scale);
+        if (this.canvas.width !== 960 * scale || this.canvas.height !== 720 * scale) {
+            this.canvas.width = 960 * scale;
+            this.canvas.height = 720 * scale;
+            ctx.scale(scale, scale);
+        }
     },
     setupMouse: function() {
         // The mouse is used to guarantee focus on the window, allowing for sound playback, and
@@ -300,6 +312,7 @@ function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red", of
     this.offsetY = offsetY;
     this.update = function() {
         this.angle += this.speed * Math.PI / 180; 
+        this.angle = this.angle % (2 * Math.PI);
         ctx.save();
         ctx.translate(this.x + 480, 360 - this.y);      
         ctx.rotate(this.angle);
@@ -374,8 +387,6 @@ function player(x=0, y=0) {
             if (!gameArea.keys[1] && !!gameArea.keys[3]) this.speedX += accel;
             if (!!gameArea.keys[0] && !gameArea.keys[2]) this.speedY += accel;
             if (!gameArea.keys[0] && !!gameArea.keys[2]) this.speedY -= accel;
-        } else if (!this.controllable) {
-            gameArea.keys = [0, 0, 0, 0];
         }
 
         // If no keys are held or all held keys cancel out each other, this brings the player to a stop.
@@ -389,8 +400,8 @@ function player(x=0, y=0) {
         }
 
         // If max speed is exceeded, this clamps the speed and keeps it in range.
-        if (!!gameArea.keys[1] == !!gameArea.keys[3]) this.speedX = limit(this.speedX);
-        if (!!gameArea.keys[0] == !!gameArea.keys[2]) this.speedY = limit(this.speedY);
+        if (!this.controllable || !!gameArea.keys[1] == !!gameArea.keys[3]) this.speedX = limit(this.speedX);
+        if (!this.controllable || !!gameArea.keys[0] == !!gameArea.keys[2]) this.speedY = limit(this.speedY);
         this.speedX = Math.min(Math.max(this.speedX, -1 * maxSpeed), maxSpeed);
         this.speedY = Math.min(Math.max(this.speedY, -1 * maxSpeed), maxSpeed);
 
@@ -482,22 +493,37 @@ function button(x=0, y=0, shape, text, id, squareSize) {
     this.y = y;
     this.shape = shape;
     this.text = text;
-    this.text.x = x;
-    this.text.y = y - (this.text.size / 16);
+    this.offsetX = this.text.x;
+    this.offsetY = this.text.y - (2 / 16);
+    this.text.x = x + this.offsetX * this.text.size;
+    this.text.y = y + this.offsetY * this.text.size;
     this.shape.x = x;
     this.shape.y = y;
     this.id = id;
     // Squares that appear behind the button for decorative purposes.
-    this.squares = [new rect(squareSize, squareSize, 0.5 * Math.random() + 0.25, x, y, Math.random() * 360),
-                    new rect(squareSize, squareSize, -0.5 * Math.random() - 0.25, x, y, Math.random() * 360)];
-    this.squares[0].color = "#ff000020";
-    this.squares[1].color = "#ff000020";
+    this.squares = [new rect(squareSize, squareSize, 0.5 * Math.random() + 0.25,
+                        x + this.offsetX * this.text.size, y + this.offsetY * this.text.size, Math.random() * 360),
+                    new rect(squareSize, squareSize, -0.5 * Math.random() - 0.25,
+                        x + this.offsetX * this.text.size, y + this.offsetY * this.text.size, Math.random() * 360)];
     this.animating = false;
     this.animStart = 0;
     this.offset = 2 * Math.PI * Math.random();
     this.status = "";
     this.update = function() {
         this.shape.angle = 3 * Math.cos(timer * Math.PI / 2 + this.offset) * Math.PI / 180;
+        switch (this.status) {
+            case "cyan":
+                this.squareColor = "#00ffff20";
+                break;
+            case "white":
+                this.squareColor = "#ffffff00";
+                this.shape.angle /= 2;
+                break;
+            default:
+                this.squareColor = "#ff000020";
+        }
+        this.squares[0].color = this.squareColor;
+        this.squares[1].color = this.squareColor;
         this.squares[0].update();
         this.squares[1].update();
         this.shape.update();
@@ -506,16 +532,34 @@ function button(x=0, y=0, shape, text, id, squareSize) {
     this.check = function() {
         // Check the button's status and if the mouse is hovering over it.
         if (mouseTarget < -1) return;
-        if (this.status == "locked") {
+        if (this.status == "disabled") {
             this.shape.color = "#ff000020";
             return;
         }
         if (inShape(mouseCoords, this.shape)){
             mouseTarget = this.id;
-            this.shape.color = (this.status == "complete") ? "#80ffff" : "#ff4040";
+            switch (this.status) {
+                case "cyan":
+                    this.shape.color = "#80ffff";
+                    break;
+                case "white":
+                    this.shape.color = "#ffffffdf";
+                    break;
+                default:
+                    this.shape.color = "#ff4040";
+            }
             this.text.color = "#000000c0";
         } else {
-            this.shape.color = (this.status == "complete") ? "cyan" : "red";
+            switch (this.status) {
+                case "cyan":
+                    this.shape.color = "cyan";
+                    break;
+                case "white":
+                    this.shape.color = "#ffffffbf";
+                    break;
+                default:
+                    this.shape.color = "red";
+            }
             this.text.color = "black";
         }
     }
@@ -531,16 +575,28 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
         
         // Fade by controlling color directly; all buttons are red and 100% opacity.
-        if (this.status == "complete") this.shape.color = "rgba(" + colorVal + ", 255, 255, " + (colorVal / 127) + ")";
-        else this.shape.color = "rgba(255, " + colorVal + ", " + colorVal + ", " + (colorVal / 127) + ")";
-        this.text.color = "rgba(0, 0, 0, " + (colorVal / 127 / 2) + ")";
+        switch (this.status) {
+            case "cyan":
+                this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
+                break;
+            case "white":
+                this.shape.color = `rgba(255, 255, 255, ${colorVal / 255})`;
+                break;
+            default:
+                this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
+        }
+        this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
 
         // Update button visuals to match scale property.
         if (!this.shape?.radius) {
             this.shape.width *= this.scale;
             this.shape.height *= this.scale;
         } else this.shape.radius *= this.scale;
+        this.text.x -= this.offsetX * this.text.size;
+        this.text.y -= this.offsetY * this.text.size;
         this.text.size *= this.scale;
+        this.text.x += this.offsetX * this.text.size;
+        this.text.y += this.offsetY * this.text.size;
 
         this.update();
 
@@ -549,7 +605,11 @@ function button(x=0, y=0, shape, text, id, squareSize) {
                 this.shape.width /= this.scale;
                 this.shape.height /= this.scale;
             } else this.shape.radius /= this.scale;
+            this.text.x -= this.offsetX * this.text.size;
+            this.text.y -= this.offsetY * this.text.size;
             this.text.size /= this.scale;
+            this.text.x += this.offsetX * this.text.size;
+            this.text.y += this.offsetY * this.text.size;
         }
 
         return true;
@@ -626,60 +686,68 @@ function animateFG(animStart, duration) {
     return true;
 }
 
-// Handles logic for start screen.
-function startScreen() {
-    // Background shapes, if any, are always drawn first.
-    BGShapes.forEach(element => {element.update()});
+// Handles logic for single-buttoned screens such as the start or levels.
+function singleButtonScreen() {
+    // Background shapes, if any, are always drawn first on the start screen.
+    if (gameState == "none") {
+        BGShapes.forEach(element => {element.update()});
+    }
 
-    // The menu consists of only a single play button.
+    // The start and level screens consists of only a single button.
     if (mouseTarget != -2) {
         mouseTarget = -1;
         menuButtons[0].update();
 
         // Check if mouse is hovering over button.
         menuButtons[0].check();
-    } else {
+    } else if (animTarget > -1) {
         // Play button and fade animations until done.
-        const buttonAnimDone = !menuButtons[animTarget].animate(0.25);
-        const FGAnimDone = !animateFG(menuButtons[animTarget].animStart, 0.5);
+        FGShapes[FGShapes.length - 1].color = "black";
+        const buttonAnimDone = !menuButtons[0].animate(0.25);
+        const FGAnimDone = !animateFG(menuButtons[0].animStart, 0.5);
         if (buttonAnimDone && FGAnimDone) {
             // Start music and switch to main menu.
             BGShapes = [];
-            gameMusic.play();
-            setupMainMenu(true);
+            if (gameState == "none") {
+                gameMusic.play();
+                setupMainMenu(true);
+            }
+            else setupLevelSelect(true);
         }
+    } else menuButtons[0].update();
+}
+
+// Setup BG shapes for menu screens.
+function setupBGShapes() {
+    BGShapes = [
+        new rect(300, 300, 0.5, -480, 360, Math.random() * 360),
+        new rect(300, 300, -0.5, 480, 360, Math.random() * 360),
+        new rect(300, 300, -0.5, -480, -360, Math.random() * 360),
+        new rect(300, 300, 0.5, 480, -360, Math.random() * 360),
+        new rect(180, 180, 0.5, -520, 120, Math.random() * 360),
+        new rect(180, 180, -0.5, 520, 120, Math.random() * 360),
+        new rect(180, 180, -0.5, 240, 400, Math.random() * 360),
+        new rect(180, 180, 0.5, 240, -400, Math.random() * 360),
+        new rect(180, 180, -0.5, -520, -120, Math.random() * 360),
+        new rect(180, 180, 0.5, 520, -120, Math.random() * 360),
+        new rect(180, 180, 0.5, -240, 400, Math.random() * 360),
+        new rect(180, 180, -0.5, -240, -400, Math.random() * 360)
+    ];
+    for (let i = 0; i < BGShapes.length; i++) {
+        const alpha = (i < 4) ? 0.25 : 0.125;
+        BGShapes[i].speed *= Math.random() + 0.5;
+        BGShapes[i].color = `rgba(255, 0, 0, ${alpha})`;
     }
 }
 
 // Loads in the main menu.
 function setupMainMenu(firstLoad) {
     // Reset button-related variables and timer.
-    mouseTarget = -1;
-    animTarget = -1;
-    timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
+    mouseTarget = animTarget = -1;
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
-    // Setup background shapes on first load.
-    if (firstLoad) {
-        BGShapes = [
-            new rect(300, 300, 0.5, -480, 360, Math.random() * 360),
-            new rect(300, 300, -0.5, 480, 360, Math.random() * 360),
-            new rect(300, 300, -0.5, -480, -360, Math.random() * 360),
-            new rect(300, 300, 0.5, 480, -360, Math.random() * 360),
-            new rect(180, 180, 0.5, -520, 120, Math.random() * 360),
-            new rect(180, 180, -0.5, 520, 120, Math.random() * 360),
-            new rect(180, 180, -0.5, 240, 400, Math.random() * 360),
-            new rect(180, 180, 0.5, 240, -400, Math.random() * 360),
-            new rect(180, 180, -0.5, -520, -120, Math.random() * 360),
-            new rect(180, 180, 0.5, 520, -120, Math.random() * 360),
-            new rect(180, 180, 0.5, -240, 400, Math.random() * 360),
-            new rect(180, 180, -0.5, -240, -400, Math.random() * 360)
-        ];
-        for (let i = 0; i < BGShapes.length; i++) {
-            const alpha = (i < 4) ? 0.25 : 0.125;
-            BGShapes[i].speed *= Math.random() + 0.5;
-            BGShapes[i].color = "rgba(255, 0, 0, " + alpha + ")";
-        }
-    }
+    // Setup background shapes on first menu load.
+    if (firstLoad) setupBGShapes();
 
     // Setup menu buttons.
     menuButtons = [
@@ -688,7 +756,7 @@ function setupMainMenu(firstLoad) {
         new button(0, -225, new rect(320, 150), new text("Credits", 0, 0, 60), 2, 180),
     ];
 
-    // Setup foreground flas, along with logo on first load.
+    // Setup foreground flash, along with logo on first menu load.
     if (firstLoad) {
         const flash = FGShapes[FGShapes.length - 1];
         FGShapes = [
@@ -704,32 +772,40 @@ function setupMainMenu(firstLoad) {
 }
 
 // Loads in the level select.
-function setupLevelSelect() {
+function setupLevelSelect(firstLoad) {
     // Reset button-related variables and timer.
-    mouseTarget = -1;
-    animTarget = -1;
-    timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
+    mouseTarget = animTarget = -1;
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
-    // Setup menu buttons; the BG shapes can stay.
+    // Setup background shapes on first menu load.
+    if (firstLoad) setupBGShapes();
+
+    // Setup menu buttons.
     menuButtons = new Array(31);
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 10; j++) {
             const num = j + i * 10
             menuButtons[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
-            if (num + 1 > currentLevel) {
-                menuButtons[num].status = "locked";
+            if (num + 1 > maxLevel) {
+                menuButtons[num].status = "disabled";
                 menuButtons[num].text.lines = [""];
             }
-            if (num + 1 < currentLevel) {
-                menuButtons[num].status = "complete";
-                menuButtons[num].squares[0].color = "#00ffff20";
-                menuButtons[num].squares[1].color = "#00ffff20";
+            if (num + 1 < maxLevel) {
+                menuButtons[num].status = "cyan";
             }
         }
     }
     menuButtons[30] = new button(0, -300, new rect(200, 75), new text("Main Menu", 0, 0, 30), 30, 100);
 
-    // Setup foreground flash; the other FG shapes can stay.
+    // Setup foreground flash, along with logo on first menu load.
+    if (firstLoad) {
+        const flash = FGShapes[FGShapes.length - 1];
+        FGShapes = [
+            new text("Spınners", 0, 200, 150, "red", "center", "Paytone One"),
+            new rect(31, 31, 1, -121.5, 254.5),
+            flash
+        ];
+    }
     FGShapes[FGShapes.length - 1].animStart = 0;
     FGShapes[FGShapes.length - 1].duration = 0.5;
 
@@ -745,15 +821,15 @@ function updateGameArea() {
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
-        case "none":
-            startScreen();
-            break;
         case "menu":
         case "select":
             menuLogic();
             break;
         case "level":
             levelLogic();
+            // fall through
+        case "none":
+            singleButtonScreen();
             break;
     }
 
@@ -769,8 +845,6 @@ function updateGameArea() {
             }
         }
     });
-
-    console.log(mouseTarget);
 }
 
 // Handles logic for menu beyond start screen.
@@ -809,7 +883,7 @@ function menuLogic() {
                         // The buttons on the main menu correspond to level select, settings, and credits.
                         switch (element.id) {
                             case 0: 
-                                setupLevelSelect();
+                                setupLevelSelect(false);
                                 break;
                             case 1:
                                 setupMainMenu(false); // TO-DO: Settings
@@ -822,7 +896,10 @@ function menuLogic() {
                         // The buttons on the level select correspond to levels and the main menu.
                         if (element.id == 30) {
                             setupMainMenu(false);
-                        } else loadLevel("Level " + (element.id + 1));
+                        } else {
+                            currentLevel = element.id + 1;
+                            loadLevel("Level " + currentLevel, true);
+                        }
                     }
                 }
             } else {
@@ -857,6 +934,7 @@ function levelLogic() {
     // If player is no longer alive, the level is failed.
     if (!playerIsAlive() && levelState == "none") {
         mainPlayer.controllable = false; 
+        mouseTarget = -2;
         levelState = "failed";
         animStartTime = timer;
         playSound("hit");
@@ -867,19 +945,27 @@ function levelLogic() {
     const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, mainGoal.rects[0].x, mainGoal.rects[0].y);
     if (sqGoalDist < 1296 * gameScale * gameScale && levelState == "none") {
         mainPlayer.controllable = false; 
+        mouseTarget = -2;
         levelState = "complete";
         animStartTime = timer;
         setTimeout(playSound, 250, "wink");
         playSound("enter");
     }
 
-    // When the level is over, an animation is played before the level is reloaded.
+    // When the level is over, an animation is played before the level is either reloaded
+    // or the next level is loaded.
     switch (levelState) {
         case "complete":
-            if (levelCompleteAnimation()) loadLevel("Level " + ++currentLevel);
+            if (levelCompleteAnimation()) {
+                if (currentLevel == maxLevel) {
+                    maxLevel++;
+                    localStorage.setItem("maxLevel", maxLevel)
+                }
+                loadLevel("Level " + ++currentLevel, false);
+            }
             break;
         case "failed":
-            if (levelFailedAnimation()) loadLevel("Level " + currentLevel);
+            if (levelFailedAnimation()) loadLevel("Level " + currentLevel, false);
             break;
         
     }
@@ -957,8 +1043,8 @@ function levelCompleteAnimation() {
 // Animate player dying, returning true 0.5 seconds after animation is complete.
 function levelFailedAnimation() {
     const elapsedTime = timer - animStartTime;
-    mainPlayer.circ.color = "rgba(0, 255, 255, " + (1 - elapsedTime / 0.5) + ")";
     if (elapsedTime < 0.5) {
+        mainPlayer.circ.color = `rgba(0, 255, 255, ${1 - elapsedTime / 0.5})`;
         mainPlayer.playerScale = 7.7 * Math.sin((elapsedTime / 0.5) + 1.2) - 6.2;
         return false;
     } else {
