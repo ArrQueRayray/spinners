@@ -4,7 +4,7 @@
 
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
 var ctx, BGShapes = [], FGShapes = [], menuButtons = [];
-var mainPlayer, mainGoal, safeArea, obstacles;
+var mainPlayer, mainGoal, safeArea, obstacles, coins;
 var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
 var currentLevel = 0, maxLevel = 1;
 fetchLevels();
@@ -15,16 +15,20 @@ gameMusic.preload = true;
 gameMusic.loop = true;
 gameMusic.volume = 0.2;
 let soundEffects = {
+    appear: new Audio("assets/audio/appear.ogg"),
     click: new Audio("assets/audio/click.wav"),
+    coin: new Audio("assets/audio/coin.ogg"),
     enter: new Audio("assets/audio/enter.wav"),
     hit: new Audio("assets/audio/hit.wav"),
     ouch: new Audio("assets/audio/ouch.wav"),
     wink: new Audio("assets/audio/wink.wav")
 };
+// Note: Sound effects may lag a bit. This is unavoidable unless using audio buffers, which is well out of scope
+// for this assignment.
 
 // Declare and/or initialize other gameplay states and properties.
 var muted = false, mouseTarget = -1, animTarget = -1;
-let gameState = "none", levelState = "none";
+let gameState = "none", levelState = "none", coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
 
@@ -142,10 +146,6 @@ function loadLevel(level, firstLoad) {
         FGShapes[FGShapes.length - 1] = flash;
         FGShapes[0] = new text(level + ": " + loadedLevel.name, -475, -345, 24, "black", "left");
 
-        // Player and goal are stored as variables, given defined coordinates
-        mainPlayer = new player(loadedLevel.player.x, loadedLevel.player.y);
-        mainGoal = new goal(loadedLevel.goal.x, loadedLevel.goal.y);
-
         // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
 
         safeArea = new Array(loadedLevel.safeArea.length);
@@ -173,6 +173,21 @@ function loadLevel(level, firstLoad) {
                 obstacles[i] = new circ(obj.radius, obj.x, obj.y, color);
             }
         }
+
+        // Coins are stored similarly, but with less customization.
+        if (Object.hasOwn(loadedLevel, "coins")) {
+            coins = new Array(loadedLevel.coins.length);
+
+            for (let i = 0; i < loadedLevel.coins.length; i++) {
+                coins[i] = new coin(loadedLevel.coins[i].x, loadedLevel.coins[i].y);
+            }
+        } else coins = [];
+        coinCount = coins.length;
+
+        // Player and goal are stored as variables, given defined coordinates
+        mainPlayer = new player(loadedLevel.player.x, loadedLevel.player.y);
+        mainGoal = new goal(loadedLevel.goal.x, loadedLevel.goal.y);
+
     } catch (error) {
         console.error("JSON parsing error: " + error);
     }
@@ -352,10 +367,10 @@ function text(string="Hello!", x=0, y=0, size=36, color="black", align="center",
         ctx.font = this.size + "px " + font + ", Tahoma, sans-serif";
         ctx.textBaseline = "middle";
         ctx.textAlign = this.align;
-        let offset = (this.lines.length - 1) * size / 2;
+        let offset = (this.lines.length - 1) * (size * 1.25) / 2;
         this.lines.forEach((line) => {
             ctx.fillText(line, this.x + 480, 360 - this.y - offset);
-            offset -= size;
+            offset -= (size * 1.25);
         });
     }
 }
@@ -470,13 +485,34 @@ function player(x=0, y=0) {
 }
 
 // Creates a goal component, with a "pulsing" animation created with a timer and sine/cosine functions.
-function goal(x=0, y=0){
+function goal(x=0, y=0) {
+    this.x = x;
+    this.y = y;
     this.rects = new Array(3);
-    this.goalScale = 1;
+    this.goalScale = coinCount > 0 ? 0.001 : 1;
+    this.animating = false;
+    this.animStart = 0;
     for (let i = 0; i < 3; i++) {
         this.rects[i] = new rect(36 * gameScale * this.goalScale, 36 * gameScale * this.goalScale, 2, x, y, i * 30 - 15, "#ffffff80");
     }
     this.update = function() {
+        if (coinCount > 0) return; // If there are uncollected coins, don't appear.
+
+        // If a last coin is collected, play a sound and appear by enlarging.
+        if (levelState != "complete") {
+            if (this.goalScale == 0.001) {
+                this.animating = true;
+                this.animStart = timer;
+                playSound("appear", 0.5);
+            }
+            if (this.animating && (timer - this.animStart) < 0.789) {
+                const t = timer - this.animStart;
+                this.goalScale = -6 * t * t + 6 * t;
+            } else {
+                this.goalScale = 1;
+            }
+        }
+
         ctx.beginPath();
         for (let i = 0; i < 3; i++) {
             this.rects[i].width = 36 + (12 - 3 * i) * Math.sin(timer * Math.PI * 2 + (i * 3 * Math.PI / 4));
@@ -484,6 +520,12 @@ function goal(x=0, y=0){
             this.rects[i].height = this.rects[i].width;
             this.rects[i].update();
         }
+    };
+    this.isClose = function() {
+        // Check if goal is within 36 pixels (adjusted to game scale).
+        const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, this.x, this.y);
+        const range = 36 * gameScale;
+        return sqGoalDist < range * range;
     };
 }
 
@@ -494,7 +536,7 @@ function button(x=0, y=0, shape, text, id, squareSize) {
     this.shape = shape;
     this.text = text;
     this.offsetX = this.text.x;
-    this.offsetY = this.text.y - (2 / 16);
+    this.offsetY = this.text.y - 0.125;
     this.text.x = x + this.offsetX * this.text.size;
     this.text.y = y + this.offsetY * this.text.size;
     this.shape.x = x;
@@ -522,8 +564,8 @@ function button(x=0, y=0, shape, text, id, squareSize) {
             default:
                 this.squareColor = "#ff000020";
         }
-        this.squares[0].color = this.squareColor;
-        this.squares[1].color = this.squareColor;
+        this.squares[0].color = this.squares[1].color = this.squareColor;
+        console.log("print " + this.animating);
         this.squares[0].update();
         this.squares[1].update();
         this.shape.update();
@@ -573,8 +615,11 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         this.animating = true;
         this.scale = Math.max(0, 1 - elapsedAmount * elapsedAmount * 0.25);
         const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
+
+        // This prevents the decorative squares from being drawn twice on the same frame.
+        if (elapsedAmount == 0) return true;
         
-        // Fade by controlling color directly; all buttons are red and 100% opacity.
+        // Fade by controlling color directly.
         switch (this.status) {
             case "cyan":
                 this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
@@ -598,6 +643,7 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         this.text.x += this.offsetX * this.text.size;
         this.text.y += this.offsetY * this.text.size;
 
+        console.log("print");
         this.update();
 
         if (this.scale > 0) {
@@ -614,6 +660,66 @@ function button(x=0, y=0, shape, text, id, squareSize) {
 
         return true;
     }
+}
+
+// Creates a coin component, collectible
+function coin(x=0, y=0) {
+    this.x = x;
+    this.y = y;
+    this.rects = [new rect(30 * gameScale, 30 * gameScale, 1, x, y, 30, "rgba(255, 255, 255, 0.13)"),
+                  new rect(45 * gameScale, 45 * gameScale, -1, x, y, -30, "#ffff0010")];
+    this.coinScale = 1;
+    this.offset = Math.random() * 2 * Math.PI;
+    this.animating = false;
+    this.animStart = 0;
+    this.update = function() {
+        const size = 12 * this.coinScale * gameScale;
+        const spin = Math.sin(timer * Math.PI / 2 + this.offset);
+        const hover = 4 * Math.sin(timer * Math.PI + this.offset) * gameScale;
+        let shine = Math.abs(Math.cos(timer * Math.PI / 2 + this.offset));
+        shine = 255 * shine * shine * shine;
+        this.rects[0].update();
+        this.rects[1].update();
+        ctx.beginPath();
+        ctx.fillStyle = `rgb(255, 255, ${shine})`;
+        ctx.moveTo(x + 480, 360 - (y + size) - hover);
+        ctx.lineTo(x + 480 - (size * spin), 360 - y - hover);
+        ctx.lineTo(x + 480, 360 - (y - size) - hover);
+        ctx.lineTo(x + 480 + (size * spin), 360 - y - hover);
+        ctx.fill();
+    };
+    this.animate = function() {
+        // Decrement coin count upon collection.
+        if (!this.animating) {
+            coinCount--;
+            this.animating = true;
+            this.animStart = timer;
+            playSound("coin", 0.6);
+        }
+
+        // Animate a coin disappearing as it is collected.
+        const elapsedAmount = (timer - this.animStart) / 0.5;
+
+        // Return when animation is over.
+        if (elapsedAmount > 1) return;
+
+        const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
+        const animScale = -3 * elapsedAmount * elapsedAmount + 2 * elapsedAmount + 1;
+        this.rects[0].color = `rgba(255, 255, ${colorVal}, ${colorVal / 255})`;
+        this.rects[1].color = `rgba(255, 255, ${colorVal}, ${colorVal / 255 / 2})`;
+        this.rects[0].width = this.rects[0].height = 30 * gameScale * animScale;
+        this.rects[1].width = this.rects[1].height = 45 * gameScale * animScale;
+        this.rects[0].speed = colorVal / 255 * 3;
+        this.rects[1].speed = -colorVal / 255 * 3;
+        this.rects[0].update();
+        this.rects[1].update();
+    }
+    this.isClose = function() {
+        // Check if coin is within 32 pixels (adjusted to game scale).
+        const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, this.x, this.y);
+        const range = 32 * gameScale;
+        return sqGoalDist < range * range;
+    };
 }
 
 // Fills a rectangle based on preferred coordinate system, and optional angle.
@@ -921,11 +1027,14 @@ function levelLogic() {
 
     // Each element, including in arrays, is drawn.
     safeArea.forEach(element => {element.update();});
-
-    // The rest of the background shapes are drawn.
-    BGShapes.forEach(element => {if (!element?.main) element.update();});
-
+    BGShapes.forEach(element => {if (!element?.main) element.update();}); // Other BG shapes are drawn.
     obstacles.forEach(element => {element.update();});
+    coins.forEach(element => { // element.update();
+        if (element.animating || element.isClose())
+            element.animate();
+        else
+            element.update();
+    });
 
     // Goal and player are drawn last.
     mainGoal.update();
@@ -941,15 +1050,14 @@ function levelLogic() {
         playSound("ouch");
     }
 
-    // If player is close enough to the goal, the level is officially completed.
-    const sqGoalDist = sqDist(mainPlayer.circ.x, mainPlayer.circ.y, mainGoal.rects[0].x, mainGoal.rects[0].y);
-    if (sqGoalDist < 1296 * gameScale * gameScale && levelState == "none") {
+    // If all coins are collected and player is close enough to the goal, the level is officially completed.
+    if (coinCount == 0 && mainGoal.isClose() && levelState == "none") {
         mainPlayer.controllable = false; 
         mouseTarget = -2;
         levelState = "complete";
         animStartTime = timer;
-        setTimeout(playSound, 250, "wink");
         playSound("enter");
+        setTimeout(playSound, 250, "wink");
     }
 
     // When the level is over, an animation is played before the level is either reloaded

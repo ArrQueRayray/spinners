@@ -359,10 +359,10 @@
     "Level 6": {
         "name": "Coins",
         "text": [
-            {"x": 0, "y": 240, "size": 54,
+            {"x": 0, "y": 280, "size": 54,
                 "string": "Check out these shiny yellow coins!"
             },
-            {"x": 0, "y": -240, "size": 24,
+            {"x": 0, "y": -280, "size": 24,
                 "string": "By the way, you gotta collect them all\n to make the goal appear."
             }
         ],
@@ -377,30 +377,109 @@
             },
             {
                 "type": "rect", 
-                "x": -300, "y": 0,
-                "width": 160, "height": 160,
+                "x": -320, "y": 0,
+                "width": 180, "height": 180,
                 "angle": 45
             },
             {
                 "type": "rect", 
-                "x": 300, "y": 0,
-                "width": 160, "height": 160,
+                "x": 320, "y": 0,
+                "width": 180, "height": 180,
                 "angle": 45
             },
             {
                 "type": "rect", 
-                "x": 0, "y": 0,
-                "width": 600, "height": 100
+                "x": -180, "y": 0,
+                "width": 180, "height": 180,
+                "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 180, "y": 0,
+                "width": 180, "height": 180,
+                "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": -180, "y": 135,
+                "width": 120, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 180, "y": 135,
+                "width": 120, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": -180, "y": -135,
+                "width": 120, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect", 
+                "x": 180, "y": -135,
+                "width": 120, "height": 120,
+                "angle": 45
             }
         ],
         "obstacles": [
             {
                 "type": "rect",
-                "x": 999, "y": 0,
-                "width": 240, "height": 80,
-                "angle": 15,
-                "offset": {"x": -100, "y": 0}
+                "x": -180, "y": 135,
+                "width": 240, "height": 18,
+                "speed": 1.333, "angle": 0
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": 135,
+                "width": 240, "height": 18,
+                "speed": -1.333, "angle": 0
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": -135,
+                "width": 240, "height": 18,
+                "speed": 1.333, "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": -135,
+                "width": 240, "height": 18,
+                "speed": -1.333, "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": 135,
+                "width": 240, "height": 18,
+                "speed": 1.333, "angle": 90
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": 135,
+                "width": 240, "height": 18,
+                "speed": -1.333, "angle": 90
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": -135,
+                "width": 240, "height": 18,
+                "speed": 1.333, "angle": 135
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": -135,
+                "width": 240, "height": 18,
+                "speed": -1.333, "angle": 135
             }
+
+        ],
+        "coins": [
+            {"x": -320, "y": 0},
+            {"x": 320, "y": 0},
+            {"x": 0, "y": 100},
+            {"x": 0, "y": -100}
         ]
     },
     "Level 8": {
