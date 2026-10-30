@@ -359,6 +359,195 @@
     "Level 6": {
         "name": "Coins",
         "text": [
+            {"x": -425, "y": 225, "size": 60, "align": "left",
+                "string": "Check out these\nyellow coins!"
+            },
+            {"x": -425, "y": 75, "size": 30, "align": "left",
+                "string": "By the way, you gotta get\nall of them to make\nthe goal appear."
+            },
+            {"x": -425, "y": -250, "size": 20, "align": "left",
+                "string": "What do you mean this layout\nis familiar? At least it's nothing too\ncomplicated, because this isn't the\nworld's hardest game in existence, right?"
+            }
+        ],
+        "player": {"x": 82.5, "y": 220},
+        "goal": {"x": -220, "y": -82.5},
+        "safeArea": [
+            {
+                "type": "rect", 
+                "x": 82.5, "y": -82.5,
+                "width": 440, "height": 440
+            },
+            {
+                "type": "rect", 
+                "x": -165, "y": -82.5,
+                "width": 275, "height": 110
+            },
+            {
+                "type": "rect", 
+                "x": 82.5, "y": 165,
+                "width": 110, "height": 275
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect",
+                "x": -137.5, "y": 137.5,
+                "width": 220, "height": 110
+            },
+            {
+                "type": "rect",
+                "x": -137.5, "y": 137.5,
+                "width": 110, "height": 220
+            },
+            {
+                "type": "rect",
+                "x": -137.5, "y": -302.5,
+                "width": 220, "height": 110
+            },
+            {
+                "type": "rect",
+                "x": -137.5, "y": -302.5,
+                "width": 110, "height": 220
+            },
+            {
+                "type": "rect",
+                "x": 302.5, "y": 137.5,
+                "width": 220, "height": 110
+            },
+            {
+                "type": "rect",
+                "x": 302.5, "y": 137.5,
+                "width": 110, "height": 220
+            },
+            {
+                "type": "rect",
+                "x": 302.5, "y": -302.5,
+                "width": 220, "height": 110
+            },
+            {
+                "type": "rect",
+                "x": 302.5, "y": -302.5,
+                "width": 110, "height": 220
+            },
+            {
+                "type": "rect", 
+                "x": 82.5, "y": -82.5,
+                "width": 22.5, "height": 385,
+                "speed": 1.375
+            },
+            {
+                "type": "rect", 
+                "x": 82.5, "y": -82.5,
+                "width": 385, "height": 22.5,
+                "speed": 1.375
+            }
+        ],
+        "coins": [
+            {"x": 82.5, "y": 82.5},
+            {"x": 247.5, "y": -82.5},
+            {"x": 82.5, "y": -247.5}
+        ]
+    },
+    "Level 8": {
+        "name": "Cogwork",
+        "player": {"x": -280, "y": -200},
+        "goal": {"x": 280, "y": -200},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 120,
+                "radius": 160
+            },
+            {
+                "type": "circ",
+                "x": -240, "y": 0,
+                "radius": 160
+            },
+            {
+                "type": "circ",
+                "x": 240, "y": 0,
+                "radius": 160
+            },
+            {
+                "type": "circ",
+                "x": 280, "y": -200,
+                "radius": 80
+            },
+            {
+                "type": "circ",
+                "x": -280, "y": -200,
+                "radius": 80
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 120,
+                "width": 150, "height": 24,
+                "speed": -1.667, "angle": 90,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 120,
+                "width": 150, "height": 24,
+                "speed": -1.667, "angle": 210,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 120,
+                "width": 150, "height": 24,
+                "speed": -1.667, "angle": -30,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": 0,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": 120,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": -120,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": 90,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": 210,
+                "offset": {"x": 75, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 240, "y": 0,
+                "width": 150, "height": 24,
+                "speed": 1.667, "angle": -30,
+                "offset": {"x": 75, "y": 0}
+            }
+        ]
+    },
+    "Level 9": {
+        "name": "Coins",
+        "text": [
             {"x": 0, "y": 280, "size": 54,
                 "string": "Check out these shiny yellow coins!"
             },
@@ -480,103 +669,6 @@
             {"x": 320, "y": 0},
             {"x": 0, "y": 100},
             {"x": 0, "y": -100}
-        ]
-    },
-    "Level 8": {
-        "name": "Cogwork",
-        "player": {"x": -280, "y": -200},
-        "goal": {"x": 280, "y": -200},
-        "safeArea": [
-            {
-                "type": "circ",
-                "x": 0, "y": 120,
-                "radius": 160
-            },
-            {
-                "type": "circ",
-                "x": -240, "y": 0,
-                "radius": 160
-            },
-            {
-                "type": "circ",
-                "x": 240, "y": 0,
-                "radius": 160
-            },
-            {
-                "type": "circ",
-                "x": 280, "y": -200,
-                "radius": 80
-            },
-            {
-                "type": "circ",
-                "x": -280, "y": -200,
-                "radius": 80
-            }
-        ],
-        "obstacles": [
-            {
-                "type": "rect", 
-                "x": 0, "y": 120,
-                "width": 150, "height": 24,
-                "speed": -1.667, "angle": 90,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": 0, "y": 120,
-                "width": 150, "height": 24,
-                "speed": -1.667, "angle": 210,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": 0, "y": 120,
-                "width": 150, "height": 24,
-                "speed": -1.667, "angle": -30,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": -240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": 0,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": -240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": 120,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": -240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": -120,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": 240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": 90,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": 240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": 210,
-                "offset": {"x": 75, "y": 0}
-            },
-            {
-                "type": "rect", 
-                "x": 240, "y": 0,
-                "width": 150, "height": 24,
-                "speed": 1.667, "angle": -30,
-                "offset": {"x": 75, "y": 0}
-            }
         ]
     },
     "Level 16": {
