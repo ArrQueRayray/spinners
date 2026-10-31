@@ -448,8 +448,8 @@
             {"x": 82.5, "y": -247.5}
         ]
     },
-    "Level 8": {
-        "name": "Cogwork",
+    "Level 7": {
+        "name": "Spare penny",
         "player": {"x": -280, "y": -200},
         "goal": {"x": 280, "y": -200},
         "safeArea": [
@@ -526,89 +526,162 @@
                 "type": "rect", 
                 "x": 240, "y": 0,
                 "width": 150, "height": 24,
-                "speed": 1.667, "angle": 90,
+                "speed": 1.667, "angle": -15,
                 "offset": {"x": 75, "y": 0}
             },
             {
                 "type": "rect", 
                 "x": 240, "y": 0,
                 "width": 150, "height": 24,
-                "speed": 1.667, "angle": 210,
+                "speed": 1.667, "angle": 105,
                 "offset": {"x": 75, "y": 0}
             },
             {
                 "type": "rect", 
                 "x": 240, "y": 0,
                 "width": 150, "height": 24,
-                "speed": 1.667, "angle": -30,
+                "speed": 1.667, "angle": -135,
                 "offset": {"x": 75, "y": 0}
             }
+        ],
+        "coins": [
+            {"x": 0, "y": 240}
+        ]
+    },
+    "Level 8": {
+        "name": "Searching pockets",
+        "scale": 1.25,
+        "player": {"x": -350, "y": 0},
+        "goal": {"x": -247.49, "y": -247.49},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 240
+            },
+            {
+                "type": "rect",
+                "x": -40, "y": 0,
+                "width": 740, "height": 120,
+                "angle": 0
+            },
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 660, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 660, "height": 120,
+                "angle": 90
+            },
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 740, "height": 120,
+                "angle": 135,
+                "offset": {"x": 40, "y": 0}
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 482, "height": 30,
+                "speed": 1.667, "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 0, "y": 0,
+                "width": 482, "height": 30,
+                "speed": 1.667, "angle": 135
+            }
+        ],
+        "coins": [
+            {"x": 0, "y": 280},
+            {"x": 280, "y": 0},
+            {"x": 0, "y": -280},
+            {"x": -197.99, "y": 197.99},
+            {"x": 197.99, "y": 197.99},
+            {"x": 197.99, "y": -197.99}
         ]
     },
     "Level 9": {
-        "name": "Coins",
-        "text": [
-            {"x": 0, "y": 280, "size": 54,
-                "string": "Check out these shiny yellow coins!"
-            },
-            {"x": 0, "y": -280, "size": 24,
-                "string": "By the way, you gotta collect them all\n to make the goal appear."
-            }
-        ],
-        "player": {"x": 0, "y": 0},
-        "goal": {"x": 0, "y": 0},
+        "name": "Diamond savant",
+        "player": {"x": 0, "y": 135},
+        "goal": {"x": 0, "y": -120},
         "safeArea": [
             {
-                "type": "rect", 
-                "x": 0, "y": 0,
+                "type": "rect",
+                "x": 0, "y": 135,
+                "width": 210, "height": 210,
+                "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": 255,
+                "width": 120, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": 255,
+                "width": 120, "height": 120,
+                "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 0, "y": -120,
                 "width": 240, "height": 240,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": -320, "y": 0,
+                "type": "rect",
+                "x": -320, "y": -120,
                 "width": 180, "height": 180,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": 320, "y": 0,
+                "type": "rect",
+                "x": 320, "y": -120,
                 "width": 180, "height": 180,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": -180, "y": 0,
+                "type": "rect",
+                "x": -180, "y": -120,
                 "width": 180, "height": 180,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": 180, "y": 0,
+                "type": "rect",
+                "x": 180, "y": -120,
                 "width": 180, "height": 180,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": -180, "y": 135,
+                "type": "rect",
+                "x": -180, "y": 15,
                 "width": 120, "height": 120,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": 180, "y": 135,
+                "type": "rect",
+                "x": 180, "y": 15,
                 "width": 120, "height": 120,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": -180, "y": -135,
+                "type": "rect",
+                "x": -180, "y": -255,
                 "width": 120, "height": 120,
                 "angle": 45
             },
             {
-                "type": "rect", 
-                "x": 180, "y": -135,
+                "type": "rect",
+                "x": 180, "y": -255,
                 "width": 120, "height": 120,
                 "angle": 45
             }
@@ -616,59 +689,161 @@
         "obstacles": [
             {
                 "type": "rect",
-                "x": -180, "y": 135,
-                "width": 240, "height": 18,
-                "speed": 1.333, "angle": 0
+                "x": -180, "y": 255,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 45
             },
             {
                 "type": "rect",
-                "x": 180, "y": 135,
-                "width": 240, "height": 18,
-                "speed": -1.333, "angle": 0
+                "x": 180, "y": 255,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 45
             },
             {
                 "type": "rect",
-                "x": -180, "y": -135,
-                "width": 240, "height": 18,
-                "speed": 1.333, "angle": 45
+                "x": -180, "y": 255,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 135
             },
             {
                 "type": "rect",
-                "x": 180, "y": -135,
-                "width": 240, "height": 18,
-                "speed": -1.333, "angle": 45
+                "x": 180, "y": 255,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 135
             },
             {
                 "type": "rect",
-                "x": -180, "y": 135,
-                "width": 240, "height": 18,
-                "speed": 1.333, "angle": 90
+                "x": -180, "y": 15,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 0
             },
             {
                 "type": "rect",
-                "x": 180, "y": 135,
-                "width": 240, "height": 18,
-                "speed": -1.333, "angle": 90
+                "x": 180, "y": 15,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 0
             },
             {
                 "type": "rect",
-                "x": -180, "y": -135,
-                "width": 240, "height": 18,
-                "speed": 1.333, "angle": 135
+                "x": -180, "y": 15,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 90
             },
             {
                 "type": "rect",
-                "x": 180, "y": -135,
-                "width": 240, "height": 18,
-                "speed": -1.333, "angle": 135
+                "x": 180, "y": 15,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 90
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": -255,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": -255,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 45
+            },
+            {
+                "type": "rect",
+                "x": -180, "y": -255,
+                "width": 257, "height": 18,
+                "speed": 1.5, "angle": 135
+            },
+            {
+                "type": "rect",
+                "x": 180, "y": -255,
+                "width": 257, "height": 18,
+                "speed": -1.5, "angle": 135
             }
-
         ],
         "coins": [
-            {"x": -320, "y": 0},
-            {"x": 320, "y": 0},
-            {"x": 0, "y": 100},
-            {"x": 0, "y": -100}
+            {"x": 57.5, "y": 192.5},
+            {"x": -57.5, "y": 192.5},
+            {"x": 57.5, "y": 77.5},
+            {"x": -57.5, "y": 77.5},
+            {"x": -320, "y": -120},
+            {"x": 320, "y": -120},
+            {"x": 0, "y": -20},
+            {"x": 0, "y": -220}
+        ]
+    },
+    "Level 10": {
+        "name": "Gold rush",
+        "scale": 1.25,
+        "player": {"x": 0, "y": -240},
+        "goal": {"x": 0, "y": -240},
+        "safeArea": [
+            {
+                "type": "rect", 
+                "x": 0, "y": -200,
+                "width": 140, "height": 200
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 90,
+                "width": 400, "height": 400
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect",
+                "x": 0, "y": 90,
+                "width": 362, "height": 32,
+                "speed": -1.5, "angle": -45
+            }
+        ],
+        "coins": [
+            {"x": -160, "y": -70},
+            {"x": -160, "y": 10},
+            {"x": -160, "y": 90},
+            {"x": -160, "y": 170},
+            {"x": -160, "y": 240},
+            {"x": -120, "y": -30},
+            {"x": -120, "y": 50},
+            {"x": -120, "y": 130},
+            {"x": -120, "y": 210},
+            {"x": -80, "y": -70},
+            {"x": -80, "y": 10},
+            {"x": -80, "y": 90},
+            {"x": -80, "y": 170},
+            {"x": -80, "y": 240},
+            {"x": -40, "y": -30},
+            {"x": -40, "y": 50},
+            {"x": -40, "y": 130},
+            {"x": -40, "y": 210},
+            {"x": 0, "y": -70},
+            {"x": 0, "y": 10},
+            {"x": 0, "y": 170},
+            {"x": 0, "y": 240},
+            {"x": 40, "y": -30},
+            {"x": 40, "y": 50},
+            {"x": 40, "y": 130},
+            {"x": 40, "y": 210},
+            {"x": 80, "y": -70},
+            {"x": 80, "y": 10},
+            {"x": 80, "y": 90},
+            {"x": 80, "y": 170},
+            {"x": 80, "y": 240},
+            {"x": 120, "y": -30},
+            {"x": 120, "y": 50},
+            {"x": 120, "y": 130},
+            {"x": 120, "y": 210},
+            {"x": 160, "y": -70},
+            {"x": 160, "y": 10},
+            {"x": 160, "y": 90},
+            {"x": 160, "y": 170},
+            {"x": 160, "y": 240},
+            {"x": -40, "y": -110},
+            {"x": -40, "y": -190},
+            {"x": -40, "y": -270},
+            {"x": 0, "y": -150},
+            {"x": 40, "y": -110},
+            {"x": 40, "y": -190},
+            {"x": 40, "y": -270}
         ]
     },
     "Level 16": {

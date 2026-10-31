@@ -694,7 +694,7 @@ function coin(x=0, y=0) {
             coinCount--;
             this.animating = true;
             this.animStart = timer;
-            playSound("coin", 0.6);
+            playSound("coin", 0.3);
         }
 
         // Animate a coin disappearing as it is collected.
