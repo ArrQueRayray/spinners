@@ -846,6 +846,71 @@
             {"x": 40, "y": -270}
         ]
     },
+    "Level 11": {
+        "name": "...uh oh",
+        "text": [
+            {"x": -175, "y": 150, "align": "right",
+                "string": "Unfortunately,\nwe seem to have\nrun into an error\nthat broke the\nneat formation\n of shapes in this\nparticular level."
+            },
+            {"x": -175, "y": -75, "size": 28, "align": "right",
+                "string": "We sincerely apologize\nfor the inconvenience."
+            },
+            {"x": -205, "y": -212.5, "size": 20, "align": "right",
+                "string": "In the meantime, please\nmake your way to the goal\nwhile we work to repair\nthis level. It shall still be\nin a beatable state, although\nthe spinners are off-center."
+            }
+        ],
+        "player": {"x": -123, "y": -283},
+        "goal": {"x": 273, "y": 291},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 125, "y": 0,
+                "radius": 247
+            },
+            {
+                "type": "rect", 
+                "x": -69, "y": -244,
+                "width": 166, "height": 182,
+                "angle": -21
+            },
+            {
+                "type": "rect", 
+                "x": 298, "y": 258, 
+                "width": 115, "height": 168,
+                "angle": 14
+            },
+            {
+                "type": "circ",
+                "x": 39, "y": 119,
+                "radius": 184
+            },
+            {
+                "type": "circ",
+                "x": 293, "y": -57,
+                "radius": 144
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 120, "y": 0, 
+                "width": 382, "height": 19, 
+                "speed": 1, "angle": 19,
+                "offset": {"x": -27, "y": 63}
+            },
+            {
+                "type": "rect", 
+                "x": 120, "y": 0, 
+                "width": 347, "height": 27, 
+                "speed": -1, "angle": 109,
+                "offset": {"x": 95, "y": -51}
+            }
+        ],
+        "coins": [
+            {"x": -70, "y": 236},
+            {"x": 403, "y": -94}
+        ]
+    },
     "Level 16": {
         "name": "Test4",
         "text": [
@@ -928,6 +993,45 @@
                 "x": -150, "y": 30,
                 "width": 182, "height": 24, 
                 "speed": -2, "angle": 0
+            }
+        ]
+    },
+    "Clear All Your Progress": {
+        "name": "Are you sure?",
+        "text": [
+            {"x": 0, "y": 270, "size": 44,
+                "string": "Are you sure you want to clear your progress?"
+            },
+            {"x": 0, "y": 200, "size": 24,
+                "string": "Your data will be erased, and you'll start back at Level 1.\nThink about this carefully!"
+            },
+            {"x": 320, "y": -180, "size": 72,
+                "string": "Yes,"
+            },
+            {"x": 320, "y": -230, "size": 18,
+                "string": "set me back\nto Level 1"
+            }
+        ],
+        "player": {"x": -320, "y": -60},
+        "goal": {"x": 320, "y": -60},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": -60,
+                "radius": 180
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": -60,
+                "width":720, "height": 120
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": -60,
+                "width": 24, "height": 362, 
+                "speed": 0.5, "angle": -60
             }
         ]
     }

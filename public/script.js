@@ -3,7 +3,7 @@
 "use strict";
 
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
-var ctx, BGShapes = [], FGShapes = [], menuButtons = [];
+var ctx, BGShapes = [], FGShapes = [], menuUI = [];
 var mainPlayer, mainGoal, safeArea, obstacles, coins;
 var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
 var currentLevel = 0, maxLevel = 1;
@@ -27,7 +27,8 @@ let soundEffects = {
 // for this assignment.
 
 // Declare and/or initialize other gameplay states and properties.
-var muted = false, mouseTarget = -1, animTarget = -1;
+var globalMuted = false, musicMuted = false, soundMuted = false;
+var mouseTarget = -1, animTarget = -1;
 let gameState = "none", levelState = "none", coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
@@ -68,7 +69,7 @@ function startGame() {
     FGShapes[FGShapes.length - 1].color = "black";
     FGShapes[FGShapes.length - 1].transition = true;
 
-    menuButtons = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
+    menuUI = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
     gameArea.start();
 }
@@ -93,8 +94,8 @@ function loadLevel(level, firstLoad) {
 
     // If a first level load, setup the menu button.
     if (firstLoad) {
-        menuButtons = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
-        menuButtons[0].status = "white";
+        menuUI = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
+        menuUI[0].status = "white";
     }
 
     // Get desired level from levels.json if possible.
@@ -225,8 +226,8 @@ var gameArea = {
                 playSound("click", 0.4);
                 animTarget = mouseTarget;
                 mouseTarget = -2;
-                menuButtons[animTarget].animStart = timer;
-                menuButtons[animTarget].animate(0.25);
+                menuUI[animTarget].animStart = timer;
+                menuUI[animTarget].animate(0.25);
             }
         });
 
@@ -262,7 +263,7 @@ var gameArea = {
                     gameArea.keys[3]++;
                     break;
                 case "KeyM":
-                    muted = !muted;
+                    globalMuted = !globalMuted;
                     break;
                 case "Backquote":
                     // For ease of level creation, prints mouse coordinates and re-fetches levels.
@@ -302,7 +303,7 @@ var gameArea = {
 
 // Plays sound, looking up string in soundEffects and setting volume.
 function playSound(key, volume=1) {
-    if (muted) return;
+    if (globalMuted || soundMuted) volume = 0;
     try {
         const soundCheck = soundEffects[key];
         soundEffects[key].currentTime = 0;
@@ -762,7 +763,7 @@ function inRect(mainPoint, mainRect) {
 
     // Find closest point on rectangle to mainPoint.
     const closeX = Math.max(-halfWidth + mainRect.offsetX, Math.min(halfWidth + mainRect.offsetX, localX));
-    const closeY = Math.max(-halfHeight - mainRect.offsetY, Math.min(halfHeight - mainRect.offsetY, localY));
+    const closeY = Math.max(-halfHeight + mainRect.offsetY, Math.min(halfHeight + mainRect.offsetY, localY));
 
     // Check if closest point is equal to mainPoint.
     return localX == closeX && localY == closeY;
@@ -792,36 +793,6 @@ function animateFG(animStart, duration) {
     return true;
 }
 
-// Handles logic for single-buttoned screens such as the start or levels.
-function singleButtonScreen() {
-    // Background shapes, if any, are always drawn first on the start screen.
-    if (gameState == "none") {
-        BGShapes.forEach(element => {element.update()});
-    }
-
-    // The start and level screens consists of only a single button.
-    if (mouseTarget != -2) {
-        mouseTarget = -1;
-        menuButtons[0].update();
-
-        // Check if mouse is hovering over button.
-        menuButtons[0].check();
-    } else if (animTarget > -1) {
-        // Play button and fade animations until done.
-        FGShapes[FGShapes.length - 1].color = "black";
-        const buttonAnimDone = !menuButtons[0].animate(0.25);
-        const FGAnimDone = !animateFG(menuButtons[0].animStart, 0.5);
-        if (buttonAnimDone && FGAnimDone) {
-            // Start music and switch to main menu.
-            BGShapes = [];
-            if (gameState == "none") {
-                gameMusic.play();
-                setupMainMenu(true);
-            }
-            else setupLevelSelect(true);
-        }
-    } else menuButtons[0].update();
-}
 
 // Setup BG shapes for menu screens.
 function setupBGShapes() {
@@ -846,6 +817,37 @@ function setupBGShapes() {
     }
 }
 
+// Handles logic for single-buttoned screens such as the start or levels.
+function singleButtonScreen() {
+    // Background shapes, if any, are always drawn first on the start screen.
+    if (gameState == "none") {
+        BGShapes.forEach(element => {element.update()});
+    }
+
+    // The start and level screens consists of only a single button.
+    if (mouseTarget != -2) {
+        mouseTarget = -1;
+        menuUI[0].update();
+
+        // Check if mouse is hovering over button.
+        menuUI[0].check();
+    } else if (animTarget > -1) {
+        // Play button and fade animations until done.
+        FGShapes[FGShapes.length - 1].color = "black";
+        const buttonAnimDone = !menuUI[0].animate(0.25);
+        const FGAnimDone = !animateFG(menuUI[0].animStart, 0.5);
+        if (buttonAnimDone && FGAnimDone) {
+            // Start music and switch to main menu.
+            BGShapes = [];
+            if (gameState == "none") {
+                gameMusic.play();
+                setupMainMenu(true);
+            }
+            else setupLevelSelect(true);
+        }
+    } else menuUI[0].update();
+}
+
 // Loads in the main menu.
 function setupMainMenu(firstLoad) {
     // Reset button-related variables and timer.
@@ -855,8 +857,8 @@ function setupMainMenu(firstLoad) {
     // Setup background shapes on first menu load.
     if (firstLoad) setupBGShapes();
 
-    // Setup menu buttons.
-    menuButtons = [
+    // Setup menu UI.
+    menuUI = [
         new button(-200, -30, new rect(320, 150), new text("Levels", 0, 0, 60), 0, 180),
         new button(200, -30, new rect(320, 150), new text("Settings", 0, 0, 60), 1, 180),
         new button(0, -225, new rect(320, 150), new text("Credits", 0, 0, 60), 2, 180),
@@ -886,22 +888,23 @@ function setupLevelSelect(firstLoad) {
     // Setup background shapes on first menu load.
     if (firstLoad) setupBGShapes();
 
-    // Setup menu buttons.
-    menuButtons = new Array(31);
+    // Setup menu UI.
+    menuUI = new Array(32);
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 10; j++) {
-            const num = j + i * 10
-            menuButtons[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
+            const num = j + i * 10;
+            menuUI[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
             if (num + 1 > maxLevel) {
-                menuButtons[num].status = "disabled";
-                menuButtons[num].text.lines = [""];
+                menuUI[num].status = "disabled";
+                menuUI[num].text.lines = [""];
             }
             if (num + 1 < maxLevel) {
-                menuButtons[num].status = "cyan";
+                menuUI[num].status = "cyan";
             }
         }
     }
-    menuButtons[30] = new button(0, -300, new rect(200, 75), new text("Main Menu", 0, 0, 30), 30, 100);
+    menuUI[30] = new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 30, 100);
+    menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
 
     // Setup foreground flash, along with logo on first menu load.
     if (firstLoad) {
@@ -918,17 +921,56 @@ function setupLevelSelect(firstLoad) {
     gameState = "select";
 }
 
+// Loads in the settings menu.
+function setupSettings() {
+    // Reset button-related variables and timer.
+    mouseTarget = animTarget = -1;
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
+
+    // Setup menu buttons.
+    menuUI = [
+        new button(-75, 40, new rect(60, 60), new text("On", 0, 0, 30), 0, 60),
+        new button(-75, -40, new rect(60, 60), new text("On", 0, 0, 30), 1, 60),
+        new button(-75, -120, new rect(60, 60), new text("On", 0, 0, 30), 2, 60),
+        new button(325, 40, new rect(60, 60), new text("On", 0, 0, 30), 3, 60),
+        new button(202.5, -80, new rect(300, 137.5), new text("Clear All Your\nProgress", 0, 0, 42), 4, 200),
+        new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 5, 100),
+        new text("Game Music", -125, 40, 36, "red", "right", "Paytone One"),
+        new text("Game Sound", -125, -40, 36, "red", "right", "Paytone One"),
+        new text("Screen Fades", -125, -120, 36, "red", "right", "Paytone One"),
+        new text("Game Sound", 275, 40, 36, "red", "right", "Paytone One")
+    ];
+
+    if (!musicMuted && !globalMuted)
+        menuUI[0].status = "cyan";
+    else
+        menuUI[0].text.lines = ["Off"];
+
+    if (!soundMuted && !globalMuted)
+        menuUI[1].status = "cyan";
+    else
+        menuUI[1].text.lines = ["Off"];
+
+    // Setup foreground flash.
+    FGShapes[FGShapes.length - 1].animStart = 0;
+    FGShapes[FGShapes.length - 1].duration = 0.5;
+
+    gameState = "settings";
+}
+
 // Updates the canvas every frame.
 function updateGameArea() {
     gameArea.clear();
     gameArea.scaleCanvas();
     timer = Date.now() / 1000 - timerStart;
-    gameMusic.volume = muted ? 0 : 0.2;
+    gameMusic.volume = (globalMuted || musicMuted) ? 0 : 0.2;
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
         case "menu":
         case "select":
+        case "settings":
+        case "credits":
             menuLogic();
             break;
         case "level":
@@ -961,26 +1003,26 @@ function menuLogic() {
     // Menu buttons are drawn, only allowing for clicks if mouseTarget is above -2.
     if (mouseTarget != -2) {
         mouseTarget = -1;
-        menuButtons.forEach(element => { 
+        menuUI.forEach(element => { 
             element.update();
 
-            // Check if mouse is hovering over button.
-            element.check();
+            // If it is a button, check if mouse is hovering over button.
+            if (typeof element.check === "function") element.check();
         });
         // On the level select, hovering over an unlocked level brings up its name.
         if (gameState == "select") {
+            menuUI[31].lines = [""];
             if (mouseTarget > -1 && mouseTarget != 30) {
                 const levelString = "Level " + (mouseTarget + 1);
                 if (Object.hasOwn(levels, levelString) && Object.hasOwn(levels[levelString], "name")) {
-                    const levelName = new text(levels[levelString].name, 0, 87.5, 30, "red", "center", "Paytone One");
-                    levelName.update();
+                    menuUI[31].lines = [levels[levelString].name];
                 }
             }
         }
     } else {
         // Once a button is clicked, the buttons continue to update as normal except for the clicked button,
         // which animates alongside a fade before performng the button behavior.
-        menuButtons.forEach(element => { 
+        menuUI.forEach(element => { 
             if (element.id == animTarget) {
                 const buttonAnimDone = !element.animate(0.25);
                 const FGAnimDone = !animateFG(element.animStart, 0.5);
@@ -992,7 +1034,7 @@ function menuLogic() {
                                 setupLevelSelect(false);
                                 break;
                             case 1:
-                                setupMainMenu(false); // TO-DO: Settings
+                                setupSettings();
                                 break;
                             case 2:
                                 setupMainMenu(false); // TO-DO: Credits
