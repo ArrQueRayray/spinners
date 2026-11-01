@@ -996,14 +996,14 @@
             }
         ]
     },
-    "Clear All Your Progress": {
+    "Reset Data": {
         "name": "Are you sure?",
         "text": [
             {"x": 0, "y": 270, "size": 44,
                 "string": "Are you sure you want to clear your progress?"
             },
             {"x": 0, "y": 200, "size": 24,
-                "string": "Your data will be erased, and you'll start back at Level 1.\nThink about this carefully!"
+                "string": "Your settings will stay intact, but you'll start back at Level 1.\nThink about this carefully!"
             },
             {"x": 320, "y": -180, "size": 72,
                 "string": "Yes,"
@@ -1031,7 +1031,7 @@
                 "type": "rect", 
                 "x": 0, "y": -60,
                 "width": 24, "height": 362, 
-                "speed": 0.5, "angle": -60
+                "speed": 0.75, "angle": -60
             }
         ]
     }

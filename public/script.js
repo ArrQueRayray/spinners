@@ -27,9 +27,16 @@ let soundEffects = {
 // for this assignment.
 
 // Declare and/or initialize other gameplay states and properties.
-var globalMuted = false, musicMuted = false, soundMuted = false;
-var mouseTarget = -1, animTarget = -1;
-let gameState = "none", levelState = "none", coinCount = 0;
+var mainMenuVisited = false;
+var gameSettings = {
+    music: true,
+    sound: true,
+    allAudio: true,
+    shapes: true,
+    fades: true
+};
+var mouseTarget, animTarget;
+let gameState, levelState, coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
 
@@ -39,12 +46,20 @@ const logoFont = new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)');
 mainFont.load().then((font) => {document.fonts.add(font)});
 logoFont.load().then((font) => {document.fonts.add(font)});
 
-if (localStorage.getItem("maxLevel")) {
-    maxLevel = localStorage.getItem("maxLevel");
-}
+// Retrieve save data from local storage if available.
+if (localStorage.getItem("maxLevel")) maxLevel = Number(localStorage.getItem("maxLevel"));
+if (localStorage.getItem("music")) gameSettings.music = localStorage.getItem("music") == "true";
+if (localStorage.getItem("sound")) gameSettings.sound = localStorage.getItem("sound") == "true";
+if (localStorage.getItem("shapes")) gameSettings.shapes = localStorage.getItem("shapes") == "true";
+if (localStorage.getItem("fades")) gameSettings.fades = localStorage.getItem("fades") == "true";
 
 // Starts game by setting up shapes, play button, and game area.
-function startGame() {
+function startGame(firstLoad) {
+    gameState = "none";
+    levelState = "none";
+    mouseTarget = animTarget = -1;
+    timerStart = Date.now() / 1000, timer = 0;
+    
     BGShapes = [
         new rect(480, 480, 0.5, -440, 320, Math.random() * 360),
         new rect(480, 480, -0.5, 440, 320, Math.random() * 360),
@@ -65,13 +80,12 @@ function startGame() {
         BGShapes[i].color = `rgba(255, 0, 0, ${alpha})`;
     }
 
-    FGShapes = [new rect(960, 720)];
-    FGShapes[FGShapes.length - 1].color = "black";
-    FGShapes[FGShapes.length - 1].transition = true;
+    FGShapes = [new rect(960, 720, 0, 0, 0, 0, "black")];
+    FGShapes[0].transition = true;
 
     menuUI = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
-    gameArea.start();
+    if (firstLoad) gameArea.start();
 }
 
 // Sets levels to levels.json.
@@ -94,7 +108,8 @@ function loadLevel(level, firstLoad) {
 
     // If a first level load, setup the menu button.
     if (firstLoad) {
-        menuUI = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
+        if (currentLevel == -1) menuUI = [new button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
+        else menuUI = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
         menuUI[0].status = "white";
     }
 
@@ -223,7 +238,16 @@ var gameArea = {
         // eventually interacting with menu buttons.
         window.addEventListener('mousedown', function (e) {
             if (mouseTarget > -1) {
+                // If interacting with the sound button, the setting must be immediately updated.
+                if (gameState == "settings" && mouseTarget == 1) {
+                    if (!gameSettings.allAudio) {
+                        gameSettings.allAudio = true;
+                        gameSettings.music = false;
+                    }
+                    gameSettings.sound = !gameSettings.sound;
+                }
                 playSound("click", 0.4);
+
                 animTarget = mouseTarget;
                 mouseTarget = -2;
                 menuUI[animTarget].animStart = timer;
@@ -263,7 +287,8 @@ var gameArea = {
                     gameArea.keys[3]++;
                     break;
                 case "KeyM":
-                    globalMuted = !globalMuted;
+                    gameSettings.allAudio = !gameSettings.allAudio;
+                    updateMute();
                     break;
                 case "Backquote":
                     // For ease of level creation, prints mouse coordinates and re-fetches levels.
@@ -303,7 +328,7 @@ var gameArea = {
 
 // Plays sound, looking up string in soundEffects and setting volume.
 function playSound(key, volume=1) {
-    if (globalMuted || soundMuted) volume = 0;
+    if (!gameSettings.allAudio || !gameSettings.sound) volume = 0;
     try {
         const soundCheck = soundEffects[key];
         soundEffects[key].currentTime = 0;
@@ -566,7 +591,6 @@ function button(x=0, y=0, shape, text, id, squareSize) {
                 this.squareColor = "#ff000020";
         }
         this.squares[0].color = this.squares[1].color = this.squareColor;
-        console.log("print " + this.animating);
         this.squares[0].update();
         this.squares[1].update();
         this.shape.update();
@@ -634,9 +658,72 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
 
         // Update button visuals to match scale property.
+        this.setScale()
+        return true;
+    }
+    this.toggle = function() {
+        // For setting toggle buttons, controls settings.
+        switch (this.id) {
+            case 0:
+                if (!gameSettings.allAudio) {
+                    gameSettings.allAudio = true;
+                    gameSettings.sound = false;
+                }
+                gameSettings.music = !gameSettings.music;
+                localStorage.setItem("music", gameSettings.music);
+                updateMute();
+                break;
+            case 1:
+                // Because the sound setting itself is already changed in gameArea.setupMouse(),
+                // it only needs to be saved and the button state updated.
+                localStorage.setItem("sound", gameSettings.sound);
+                updateMute();
+                break;  
+            case 2:
+                gameSettings.shapes = !gameSettings.shapes;
+                localStorage.setItem("shapes", gameSettings.shapes);
+                updateSettings(gameSettings.shapes, 2);
+                break;
+            case 3:
+                gameSettings.fades = !gameSettings.fades;
+                localStorage.setItem("fades", gameSettings.fades);
+                updateSettings(gameSettings.fades, 3);
+                break;  
+        }
+    }
+    this.reappear = function(duration) {
+        // For setting toggle buttons, fades button back into visibility.
+        const elapsedAmount = (timer - this.animStart) / duration;
+
+        // Reset states and return when animation is over.
+        if (elapsedAmount > 1) {
+            this.animating = false;
+            this.animStart = 0;
+            this.toggled = false;
+            mouseTarget = -1;
+            animTarget = -1;
+            return;
+        }
+
+        this.scale = Math.min(elapsedAmount * elapsedAmount * 0.25 + 0.75, 1);
+        const colorVal = 255 * elapsedAmount * elapsedAmount;
+        
+        // Fade by controlling color directly.
+        if (this.status == "cyan") 
+            this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
+        else
+            this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
+        this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
+
+        // Update button visuals to match scale property.
+        this.setScale()
+        return true;
+    }
+    this.setScale = function() {
+        // Multiply by scale, visually.
         if (!this.shape?.radius) {
-            this.shape.width *= this.scale;
-            this.shape.height *= this.scale;
+        this.shape.width *= this.scale;
+        this.shape.height *= this.scale;
         } else this.shape.radius *= this.scale;
         this.text.x -= this.offsetX * this.text.size;
         this.text.y -= this.offsetY * this.text.size;
@@ -644,9 +731,9 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         this.text.x += this.offsetX * this.text.size;
         this.text.y += this.offsetY * this.text.size;
 
-        console.log("print");
         this.update();
 
+        // Undo internally by dividing by scale.
         if (this.scale > 0) {
             if (!this.shape?.radius) {
                 this.shape.width /= this.scale;
@@ -658,8 +745,6 @@ function button(x=0, y=0, shape, text, id, squareSize) {
             this.text.x += this.offsetX * this.text.size;
             this.text.y += this.offsetY * this.text.size;
         }
-
-        return true;
     }
 }
 
@@ -793,7 +878,6 @@ function animateFG(animStart, duration) {
     return true;
 }
 
-
 // Setup BG shapes for menu screens.
 function setupBGShapes() {
     BGShapes = [
@@ -845,12 +929,15 @@ function singleButtonScreen() {
             }
             else setupLevelSelect(true);
         }
-    } else menuUI[0].update();
+    } else if (typeof menuUI[0].update === "function") menuUI[0].update();
+
+    if (mainMenuVisited) animateFG(0, 0.5);
 }
 
 // Loads in the main menu.
 function setupMainMenu(firstLoad) {
     // Reset button-related variables and timer.
+    mainMenuVisited = true;
     mouseTarget = animTarget = -1;
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
@@ -882,6 +969,7 @@ function setupMainMenu(firstLoad) {
 // Loads in the level select.
 function setupLevelSelect(firstLoad) {
     // Reset button-related variables and timer.
+    levelState = "none";
     mouseTarget = animTarget = -1;
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
@@ -929,27 +1017,22 @@ function setupSettings() {
 
     // Setup menu buttons.
     menuUI = [
-        new button(-75, 40, new rect(60, 60), new text("On", 0, 0, 30), 0, 60),
-        new button(-75, -40, new rect(60, 60), new text("On", 0, 0, 30), 1, 60),
-        new button(-75, -120, new rect(60, 60), new text("On", 0, 0, 30), 2, 60),
-        new button(325, 40, new rect(60, 60), new text("On", 0, 0, 30), 3, 60),
-        new button(202.5, -80, new rect(300, 137.5), new text("Clear All Your\nProgress", 0, 0, 42), 4, 200),
+        new button(-75, 40, new rect(60, 60), new text("Off", 0, 0, 30), 0, 60),
+        new button(-75, -40, new rect(60, 60), new text("Off", 0, 0, 30), 1, 60),
+        new button(-75, -120, new rect(60, 60), new text("Off", 0, 0, 30), 2, 60),
+        new button(325, 40, new rect(60, 60), new text("Off", 0, 0, 30), 3, 60),
+        new button(202.5, -80, new rect(300, 137.5), new text("Reset Data", 0, 0, 56), 4, 200),
         new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 5, 100),
         new text("Game Music", -125, 40, 36, "red", "right", "Paytone One"),
         new text("Game Sound", -125, -40, 36, "red", "right", "Paytone One"),
-        new text("Screen Fades", -125, -120, 36, "red", "right", "Paytone One"),
-        new text("Game Sound", 275, 40, 36, "red", "right", "Paytone One")
+        new text("BG Shapes", -125, -120, 36, "red", "right", "Paytone One"),
+        new text("Screen Fades", 275, 40, 36, "red", "right", "Paytone One")
     ];
 
-    if (!musicMuted && !globalMuted)
-        menuUI[0].status = "cyan";
-    else
-        menuUI[0].text.lines = ["Off"];
-
-    if (!soundMuted && !globalMuted)
-        menuUI[1].status = "cyan";
-    else
-        menuUI[1].text.lines = ["Off"];
+    updateSettings(gameSettings.allAudio && gameSettings.music, 0);
+    updateSettings(gameSettings.allAudio && gameSettings.sound, 1);
+    updateSettings(gameSettings.shapes, 2);
+    updateSettings(gameSettings.fades, 3);
 
     // Setup foreground flash.
     FGShapes[FGShapes.length - 1].animStart = 0;
@@ -958,12 +1041,42 @@ function setupSettings() {
     gameState = "settings";
 }
 
+// Sets status of buttons in settings menu.
+function updateSettings(condition, id) {
+    if (condition) {
+        menuUI[id].status = "cyan";
+        menuUI[id].text.lines = ["On"];
+    } else {
+        menuUI[id].status = "none";
+        menuUI[id].text.lines = ["Off"];
+    }
+}
+
+// The M key acts as a "mute all" keybind. This allows for audio settings to persist when unmuting.
+// (e.g. If music is on and sound is off, muting and unmuting all should keep music on and sound off.)
+function updateMute() {
+    if (!gameSettings.allAudio && gameSettings.music && gameSettings.sound) {
+        gameSettings.music = gameSettings.sound = false;
+        gameSettings.allAudio = true;
+    }
+
+    if (!gameSettings.allAudio && !gameSettings.music &&! gameSettings.sound) {
+        gameSettings.music = gameSettings.sound = gameSettings.allAudio = true;
+    }
+
+    // This reflects the update in button status if on the settings menu.
+    if (gameState == "settings") {
+        updateSettings(gameSettings.allAudio && gameSettings.music, 0);
+        updateSettings(gameSettings.allAudio && gameSettings.sound, 1);
+    }
+}
+
 // Updates the canvas every frame.
 function updateGameArea() {
     gameArea.clear();
     gameArea.scaleCanvas();
     timer = Date.now() / 1000 - timerStart;
-    gameMusic.volume = (globalMuted || musicMuted) ? 0 : 0.2;
+    gameMusic.volume = (!gameSettings.allAudio || !gameSettings.music) ? 0 : 0.2;
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
@@ -993,6 +1106,12 @@ function updateGameArea() {
             }
         }
     });
+
+    if (gameState == "none" && timer < 0.2) {
+        ctx.beginPath();
+        ctx.fillStyle = "black";
+        centerFillRect(0, 0, 960, 720);
+    }
 }
 
 // Handles logic for menu beyond start screen.
@@ -1024,9 +1143,20 @@ function menuLogic() {
         // which animates alongside a fade before performng the button behavior.
         menuUI.forEach(element => { 
             if (element.id == animTarget) {
-                const buttonAnimDone = !element.animate(0.25);
-                const FGAnimDone = !animateFG(element.animStart, 0.5);
-                if (buttonAnimDone && FGAnimDone) {
+                // This handles button animations. Most buttons occur with a screen transition, with the
+                // exception of some buttons in the settings menu, which also have no fadeout.
+                const settingsToggle = gameState == "settings" && animTarget < 4;
+                const buttonAnimDone = !element.animate(settingsToggle ? 0 : 0.25);
+                const FGAnimDone = !settingsToggle && !animateFG(element.animStart, 0.5);
+
+                // Setting toggle buttons should only run toggle() once.
+                if (settingsToggle && !element?.toggled) {
+                    element.toggled = true;
+                    element.toggle();
+                }
+
+                // Checks are performed to ensure the animations have completed.
+                if (buttonAnimDone && (settingsToggle || FGAnimDone)) {
                     if (gameState == "menu") {
                         // The buttons on the main menu correspond to level select, settings, and credits.
                         switch (element.id) {
@@ -1047,6 +1177,18 @@ function menuLogic() {
                         } else {
                             currentLevel = element.id + 1;
                             loadLevel("Level " + currentLevel, true);
+                        }
+                    } else if (gameState == "settings") {
+                        // The buttons on the settings menu largely correspond to toggle-able settings.
+                        // The reset data button directs to a special level acting as a confirmation
+                        // screen, and the menu buttton is self-explanatory.
+                        if (element.id == 4) {
+                            currentLevel = -1;
+                            loadLevel("Reset Data", true);
+                        } else if (element.id == 5) {
+                            setupMainMenu(false);
+                        } else {
+                            element.reappear(0.125);
                         }
                     }
                 }
@@ -1106,12 +1248,31 @@ function levelLogic() {
     // or the next level is loaded.
     switch (levelState) {
         case "complete":
+            if (currentLevel == -1) {
+                // For the "reset data" level, remove button and stop music.
+                menuUI[0] = [new circ(0)];
+                gameMusic.pause();
+                gameMusic.currentTime = 0;
+            }
             if (levelCompleteAnimation()) {
-                if (currentLevel == maxLevel) {
-                    maxLevel++;
-                    localStorage.setItem("maxLevel", maxLevel)
+                if (currentLevel == -1) {
+                    // For the "reset data" level, reset progression, save to local storage, and restart game.
+                    if (gameState != "reset") {
+                        maxLevel = 1;
+                        localStorage.setItem("maxLevel", maxLevel);
+                        gameState = "reset";
+                        FGShapes = [FGShapes[FGShapes.length - 1]];
+                        FGShapes[0].update();
+                        startGame(false);
+                    }
+                } else {
+                    // If applicable, unlock next level and save to local storage.
+                    if (currentLevel == maxLevel) {
+                        maxLevel++;
+                        localStorage.setItem("maxLevel", maxLevel);
+                    }
+                    loadLevel("Level " + ++currentLevel, false);
                 }
-                loadLevel("Level " + ++currentLevel, false);
             }
             break;
         case "failed":
@@ -1182,7 +1343,7 @@ function levelCompleteAnimation() {
         if (FGShapes[FGShapes.length - 1].animStart == 0) {
             FGShapes[FGShapes.length - 1].animStart = timer;
             FGShapes[FGShapes.length - 1].duration = 0.5;
-            FGShapes[FGShapes.length - 1].color = "white";
+            FGShapes[FGShapes.length - 1].color = currentLevel == -1 ? "black" : "white";
         }
         gameScale = 0;
         mainGoal.goalScale = 0;
