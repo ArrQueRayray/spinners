@@ -590,13 +590,13 @@
                 "type": "rect",
                 "x": 0, "y": 0,
                 "width": 482, "height": 30,
-                "speed": 1.667, "angle": 45
+                "speed": 1.5, "angle": 45
             },
             {
                 "type": "rect",
                 "x": 0, "y": 0,
                 "width": 482, "height": 30,
-                "speed": 1.667, "angle": 135
+                "speed": 1.5, "angle": 135
             }
         ],
         "coins": [

@@ -16,12 +16,12 @@ gameMusic.loop = true;
 gameMusic.volume = 0.2;
 let soundEffects = {
     appear: new Audio("assets/audio/appear.ogg"),
-    click: new Audio("assets/audio/click.wav"),
+    click: new Audio("assets/audio/click.ogg"),
     coin: new Audio("assets/audio/coin.ogg"),
-    enter: new Audio("assets/audio/enter.wav"),
-    hit: new Audio("assets/audio/hit.wav"),
-    ouch: new Audio("assets/audio/ouch.wav"),
-    wink: new Audio("assets/audio/wink.wav")
+    enter: new Audio("assets/audio/enter.ogg"),
+    hit: new Audio("assets/audio/hit.ogg"),
+    ouch: new Audio("assets/audio/ouch.ogg"),
+    wink: new Audio("assets/audio/wink.ogg")
 };
 // Note: Sound effects may lag a bit. This is unavoidable unless using audio buffers, which is well out of scope
 // for this assignment.
@@ -97,14 +97,20 @@ async function fetchLevels() {
     }
 }
 
+// Re-enables buttons by clearing targets.
+function clearTarget() {
+    mouseTarget = animTarget = -1;
+}
+
 // Loads objects and sets variables required for playing through a new level.
 function loadLevel(level, firstLoad) {
     // Setup timer and states
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
     gameState = "level", levelState = "none";
     FGShapes[FGShapes.length - 1].animStart = 0;
-    FGShapes[FGShapes.length - 1].duration = 0.5;
-    mouseTarget = animTarget = -1;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
 
     // If a first level load, setup the menu button.
     if (firstLoad) {
@@ -591,19 +597,20 @@ function button(x=0, y=0, shape, text, id, squareSize) {
                 this.squareColor = "#ff000020";
         }
         this.squares[0].color = this.squares[1].color = this.squareColor;
-        this.squares[0].update();
-        this.squares[1].update();
+        if (gameSettings.shapes) {
+            this.squares[0].update();
+            this.squares[1].update();
+        }
         this.shape.update();
         this.text.update();
     }
     this.check = function() {
         // Check the button's status and if the mouse is hovering over it.
-        if (mouseTarget < -1) return;
         if (this.status == "disabled") {
             this.shape.color = "#ff000020";
             return;
         }
-        if (inShape(mouseCoords, this.shape)){
+        if (mouseTarget != -2 && inShape(mouseCoords, this.shape)){
             mouseTarget = this.id;
             switch (this.status) {
                 case "cyan":
@@ -638,27 +645,32 @@ function button(x=0, y=0, shape, text, id, squareSize) {
         if (elapsedAmount > 1) return false;
 
         this.animating = true;
-        this.scale = Math.max(0, 1 - elapsedAmount * elapsedAmount * 0.25);
-        const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
 
-        // This prevents the decorative squares from being drawn twice on the same frame.
-        if (elapsedAmount == 0) return true;
-        
-        // Fade by controlling color directly.
-        switch (this.status) {
-            case "cyan":
-                this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
-                break;
-            case "white":
-                this.shape.color = `rgba(255, 255, 255, ${colorVal / 255})`;
-                break;
-            default:
-                this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
+        // The button only animates if fades are enabled to begin with.
+        if (gameSettings.fades) {
+            this.scale = Math.max(0, 1 - elapsedAmount * elapsedAmount * 0.25);
+            const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
+
+            // This prevents the decorative squares from being drawn twice on the same frame.
+            if (elapsedAmount == 0) return true;
+            
+            // Fade by controlling color directly.
+            switch (this.status) {
+                case "cyan":
+                    this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
+                    break;
+                case "white":
+                    this.shape.color = `rgba(255, 255, 255, ${colorVal / 255})`;
+                    break;
+                default:
+                    this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
+            }
+            this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
+
+            // Update button visuals to match scale property.
+            this.setScale()
         }
-        this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
 
-        // Update button visuals to match scale property.
-        this.setScale()
         return true;
     }
     this.toggle = function() {
@@ -901,11 +913,22 @@ function setupBGShapes() {
     }
 }
 
+// Setup FG shapes (i.e. logo) for menu screens.
+function setupFGShapes() {
+    const flash = FGShapes[FGShapes.length - 1];
+    FGShapes = [
+        new text("Spınners", 0, 200, 150, "red", "center", "Paytone One"),
+        new text("by ArrQue", 327.5, 130, 30, "red", "right", "Paytone One"),
+        new rect(31, 31, 1, -121.5, 254.5),
+        flash
+    ];
+}
+
 // Handles logic for single-buttoned screens such as the start or levels.
 function singleButtonScreen() {
-    // Background shapes, if any, are always drawn first on the start screen.
+    // Background shapes, if enabled, are always drawn first on the start screen.
     if (gameState == "none") {
-        BGShapes.forEach(element => {element.update()});
+        if (gameSettings.shapes) BGShapes.forEach(element => {element.update()});
     }
 
     // The start and level screens consists of only a single button.
@@ -920,29 +943,35 @@ function singleButtonScreen() {
         FGShapes[FGShapes.length - 1].color = "black";
         const buttonAnimDone = !menuUI[0].animate(0.25);
         const FGAnimDone = !animateFG(menuUI[0].animStart, 0.5);
-        if (buttonAnimDone && FGAnimDone) {
+        if (!gameSettings.fades || (buttonAnimDone && FGAnimDone)) {
             // Start music and switch to main menu.
             BGShapes = [];
             if (gameState == "none") {
                 gameMusic.play();
                 setupMainMenu(true);
             }
+            else if (currentLevel == -1) setupSettings(true);
             else setupLevelSelect(true);
         }
-    } else if (typeof menuUI[0].update === "function") menuUI[0].update();
+    } else if (typeof menuUI[0].update === "function") {
+        menuUI[0].update();
+        menuUI[0].check();
+    }
 
-    if (mainMenuVisited) animateFG(0, 0.5);
+    // Upon a restart, fade in if enabled.
+    if (mainMenuVisited && gameSettings.fades) animateFG(0, 0.5);
 }
 
 // Loads in the main menu.
-function setupMainMenu(firstLoad) {
+function setupMainMenu(notLoaded) {
     // Reset button-related variables and timer.
     mainMenuVisited = true;
-    mouseTarget = animTarget = -1;
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
-    // Setup background shapes on first menu load.
-    if (firstLoad) setupBGShapes();
+    // Setup background shapes if not loaded.
+    if (notLoaded) setupBGShapes();
 
     // Setup menu UI.
     menuUI = [
@@ -951,30 +980,24 @@ function setupMainMenu(firstLoad) {
         new button(0, -225, new rect(320, 150), new text("Credits", 0, 0, 60), 2, 180),
     ];
 
-    // Setup foreground flash, along with logo on first menu load.
-    if (firstLoad) {
-        const flash = FGShapes[FGShapes.length - 1];
-        FGShapes = [
-            new text("Spınners", 0, 200, 150, "red", "center", "Paytone One"),
-            new rect(31, 31, 1, -121.5, 254.5),
-            flash
-        ];
-    }
+    // Setup foreground flash if enabled, along with logo if not loaded.
+    if (notLoaded) setupFGShapes();
     FGShapes[FGShapes.length - 1].animStart = 0;
-    FGShapes[FGShapes.length - 1].duration = 0.5;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.25 : 0;
 
     gameState = "menu";
 }
 
 // Loads in the level select.
-function setupLevelSelect(firstLoad) {
+function setupLevelSelect(notLoaded) {
     // Reset button-related variables and timer.
     levelState = "none";
-    mouseTarget = animTarget = -1;
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
 
-    // Setup background shapes on first menu load.
-    if (firstLoad) setupBGShapes();
+    // Setup background shapes if not loaded.
+    if (notLoaded) setupBGShapes();
 
     // Setup menu UI.
     menuUI = new Array(32);
@@ -989,54 +1012,58 @@ function setupLevelSelect(firstLoad) {
             if (num + 1 < maxLevel) {
                 menuUI[num].status = "cyan";
             }
+            menuUI[num].check();
         }
     }
     menuUI[30] = new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 30, 100);
     menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
 
-    // Setup foreground flash, along with logo on first menu load.
-    if (firstLoad) {
-        const flash = FGShapes[FGShapes.length - 1];
-        FGShapes = [
-            new text("Spınners", 0, 200, 150, "red", "center", "Paytone One"),
-            new rect(31, 31, 1, -121.5, 254.5),
-            flash
-        ];
-    }
+    // Setup foreground flash if enabled, along with logo if not loaded.
+    if (notLoaded) setupFGShapes();
     FGShapes[FGShapes.length - 1].animStart = 0;
-    FGShapes[FGShapes.length - 1].duration = 0.5;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
 
     gameState = "select";
 }
 
 // Loads in the settings menu.
-function setupSettings() {
+function setupSettings(notLoaded) {
     // Reset button-related variables and timer.
-    mouseTarget = animTarget = -1;
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
+
+    // Setup background shapes if not loaded.
+    if (notLoaded) setupBGShapes();
 
     // Setup menu buttons.
     menuUI = [
-        new button(-75, 40, new rect(60, 60), new text("Off", 0, 0, 30), 0, 60),
-        new button(-75, -40, new rect(60, 60), new text("Off", 0, 0, 30), 1, 60),
-        new button(-75, -120, new rect(60, 60), new text("Off", 0, 0, 30), 2, 60),
-        new button(325, 40, new rect(60, 60), new text("Off", 0, 0, 30), 3, 60),
-        new button(202.5, -80, new rect(300, 137.5), new text("Reset Data", 0, 0, 56), 4, 200),
+        new button(-75, 30, new rect(60, 60), new text("Off", 0, 0, 30), 0, 60),
+        new button(-75, -50, new rect(60, 60), new text("Off", 0, 0, 30), 1, 60),
+        new button(-75, -130, new rect(60, 60), new text("Off", 0, 0, 30), 2, 60),
+        new button(325, 30, new rect(60, 60), new text("Off", 0, 0, 30), 3, 60),
+        new button(202.5, -90, new rect(300, 137.5), new text("Reset Data", 0, 0, 56), 4, 200),
         new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 5, 100),
-        new text("Game Music", -125, 40, 36, "red", "right", "Paytone One"),
-        new text("Game Sound", -125, -40, 36, "red", "right", "Paytone One"),
-        new text("BG Shapes", -125, -120, 36, "red", "right", "Paytone One"),
-        new text("Screen Fades", 275, 40, 36, "red", "right", "Paytone One")
+        new text("Game Music", -125, 30, 36, "red", "right", "Paytone One"),
+        new text("Game Sound", -125, -50, 36, "red", "right", "Paytone One"),
+        new text("BG Shapes", -125, -130, 36, "red", "right", "Paytone One"),
+        new text("Screen Fades", 275, 30, 36, "red", "right", "Paytone One")
     ];
 
+    // Update button states.
     updateSettings(gameSettings.allAudio && gameSettings.music, 0);
     updateSettings(gameSettings.allAudio && gameSettings.sound, 1);
     updateSettings(gameSettings.shapes, 2);
     updateSettings(gameSettings.fades, 3);
 
-    // Setup foreground flash.
+    for (let i = 0; i < 5; i++) {
+        menuUI[i].check();
+    }
+
+    // Setup foreground flash if enabled, along with logo if not loaded.
+    if (notLoaded) setupFGShapes();
     FGShapes[FGShapes.length - 1].animStart = 0;
-    FGShapes[FGShapes.length - 1].duration = 0.5;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
 
     gameState = "settings";
 }
@@ -1069,6 +1096,29 @@ function updateMute() {
         updateSettings(gameSettings.allAudio && gameSettings.music, 0);
         updateSettings(gameSettings.allAudio && gameSettings.sound, 1);
     }
+}
+
+function setupCredits() {
+    // Reset button-related variables and timer.
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
+
+    // Setup menu button.
+    menuUI = [
+        new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 0, 100),
+        new text("A game by ArrQue (RayRay)", 0, 62.5, 30, "red", "center", "Paytone One"),
+        new text("Gameplay inspired by The World's Hardest Game", 0, -15, 30, "red", "center", "Paytone One"),
+        new text("UI inspired by games created by Gaz Thomas", 0, -60, 30, "red", "center", "Paytone One"),
+        new text("Music composed in Ableton Live", 0, -142.5, 30, "red", "center", "Paytone One"),
+        new text("SFX sourced from Uni Anims", 0, -187.5, 30, "red", "center", "Paytone One")
+    ];
+
+    // Setup foreground flash if enabled.
+    FGShapes[FGShapes.length - 1].animStart = 0;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
+
+    gameState = "credits";
 }
 
 // Updates the canvas every frame.
@@ -1116,8 +1166,8 @@ function updateGameArea() {
 
 // Handles logic for menu beyond start screen.
 function menuLogic() {
-    // Background shapes, if any, are always drawn first.
-    BGShapes.forEach(element => {element.update()});
+    // Background shapes, if enabled, are always drawn first.
+    if (gameSettings.shapes) BGShapes.forEach(element => {element.update()});
 
     // Menu buttons are drawn, only allowing for clicks if mouseTarget is above -2.
     if (mouseTarget != -2) {
@@ -1156,7 +1206,7 @@ function menuLogic() {
                 }
 
                 // Checks are performed to ensure the animations have completed.
-                if (buttonAnimDone && (settingsToggle || FGAnimDone)) {
+                if (!gameSettings.fades || ( buttonAnimDone && (settingsToggle || FGAnimDone))) {
                     if (gameState == "menu") {
                         // The buttons on the main menu correspond to level select, settings, and credits.
                         switch (element.id) {
@@ -1164,10 +1214,10 @@ function menuLogic() {
                                 setupLevelSelect(false);
                                 break;
                             case 1:
-                                setupSettings();
+                                setupSettings(false);
                                 break;
                             case 2:
-                                setupMainMenu(false); // TO-DO: Credits
+                                setupCredits();
                                 break;
                         }
                     } else if (gameState == "select") {
@@ -1190,7 +1240,7 @@ function menuLogic() {
                         } else {
                             element.reappear(0.125);
                         }
-                    }
+                    } else setupMainMenu(false);
                 }
             } else {
                 if (element.id != animTarget) element.update();
@@ -1211,7 +1261,7 @@ function levelLogic() {
 
     // Each element, including in arrays, is drawn.
     safeArea.forEach(element => {element.update();});
-    BGShapes.forEach(element => {if (!element?.main) element.update();}); // Other BG shapes are drawn.
+    if (gameSettings.shapes) BGShapes.forEach(element => {if (!element?.main) element.update();}); // Other BG shapes are drawn if enabled.
     obstacles.forEach(element => {element.update();});
     coins.forEach(element => { // element.update();
         if (element.animating || element.isClose())
@@ -1227,7 +1277,7 @@ function levelLogic() {
     // If player is no longer alive, the level is failed.
     if (!playerIsAlive() && levelState == "none") {
         mainPlayer.controllable = false; 
-        mouseTarget = -2;
+        mouseTarget = animTarget = -2;
         levelState = "failed";
         animStartTime = timer;
         playSound("hit");
@@ -1237,7 +1287,7 @@ function levelLogic() {
     // If all coins are collected and player is close enough to the goal, the level is officially completed.
     if (coinCount == 0 && mainGoal.isClose() && levelState == "none") {
         mainPlayer.controllable = false; 
-        mouseTarget = -2;
+        mouseTarget = animTarget = -2;
         levelState = "complete";
         animStartTime = timer;
         playSound("enter");
@@ -1342,12 +1392,12 @@ function levelCompleteAnimation() {
     } else {
         if (FGShapes[FGShapes.length - 1].animStart == 0) {
             FGShapes[FGShapes.length - 1].animStart = timer;
-            FGShapes[FGShapes.length - 1].duration = 0.5;
+            FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
             FGShapes[FGShapes.length - 1].color = currentLevel == -1 ? "black" : "white";
         }
         gameScale = 0;
         mainGoal.goalScale = 0;
-        return elapsedTime >= 1.25;
+        return elapsedTime >= (gameSettings.fades ? 1.25 : 0.75);
     }
 }
 
@@ -1361,10 +1411,10 @@ function levelFailedAnimation() {
     } else {
         if (FGShapes[FGShapes.length - 1].animStart == 0) {
             FGShapes[FGShapes.length - 1].animStart = timer;
-            FGShapes[FGShapes.length - 1].duration = 0.25;
+            FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.25 : 0;
             FGShapes[FGShapes.length - 1].color = "red";
         }
         mainPlayer.playerScale = 0;
-        return elapsedTime >= 0.75;
+        return elapsedTime >= (gameSettings.fades ? 0.75 : 0.5);
     }
 }
