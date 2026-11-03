@@ -894,14 +894,14 @@
             {
                 "type": "rect", 
                 "x": 120, "y": 0, 
-                "width": 382, "height": 19, 
+                "width": 332, "height": 19, 
                 "speed": 1, "angle": 19,
                 "offset": {"x": -27, "y": 63}
             },
             {
                 "type": "rect", 
                 "x": 120, "y": 0, 
-                "width": 347, "height": 27, 
+                "width": 297, "height": 27, 
                 "speed": -1, "angle": 109,
                 "offset": {"x": 95, "y": -51}
             }
@@ -911,22 +911,752 @@
             {"x": 403, "y": -94}
         ]
     },
-    "Level 16": {
-        "name": "Test4",
+    "Level 12": {
+        "name": "Starry dream",
+        "scale": 0.75,
         "text": [
-            {"x": -380, "y": 210,
-                "string": "Test text\nwith\nnew lines!"
+            {"x": 70, "y": -242.5, "size": 32,
+                "string": "Nah, I'm just playin' around with ya."
             },
-            {"x": 350, "y": -240,
-                "string": "Multiple text\nobjects, wowie!"
-            },
-            {"x": 0, "y": -280, "size": 96,
-                "string": "Big text!"
-            },
-            {"x": 135, "y": 280, "size": 24, "align": "right",
-                "string": "This text is not only small, but\nit is right-aligned as well, and that\nworks just fine!"
+            {"x": -65, "y": -312.5, "size": 16.5, "align": "left",
+                "string": "That said, expect more off-center spinning objects. On a side-note, I definitely\nsaid quite a lot back there, huh? Really, I want to make the most out of coding\nthis kind of level text in. I'm quite happy with how flexible\nthe customization is. But don't get too distracted, got it?"
             }
         ],
+        "player": {"x": -355, "y": -110},
+        "goal": {"x": -355, "y": -110},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": -154, "y": 107,
+                "radius": 220
+            },
+            {
+                "type": "circ",
+                "x": 160, "y": -14,
+                "radius": 195
+            },
+            {
+                "type": "circ",
+                "x": -69, "y": -64,
+                "radius": 145
+            },
+            {
+                "type": "circ",
+                "x": 104, "y": 122,
+                "radius": 165
+            },
+            {
+                "type": "circ",
+                "x": -355, "y": -110,
+                "radius": 90
+            },
+            {
+                "type": "circ",
+                "x": 375, "y": 250,
+                "radius": 60
+            },
+            {
+                "type": "circ",
+                "x": 315, "y": 165,
+                "radius": 30
+            },
+            {
+                "type": "circ",
+                "x": 380, "y": -190,
+                "radius": 60
+            },
+            {
+                "type": "circ",
+                "x": -240, "y": -240,
+                "radius": 45
+            },
+            {
+                "type": "circ",
+                "x": -125, "y": -315,
+                "radius": 25
+            },
+            {
+                "type": "circ",
+                "x": -375, "y": 285,
+                "radius": 30
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -25, "y": -200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -25, "y": -200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -25, "y": -200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 50, "y": 100}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 50, "y": 100}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 50, "y": 100}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -100, "y": -75}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -100, "y": -75}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -100, "y": -75}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -275, "y": 25}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -275, "y": 25}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -275, "y": 25}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 75, "y": -125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 75, "y": -125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 75, "y": -125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 175, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 175, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 175, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": 250}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": 250}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": 250}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -150, "y": 200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -150, "y": 200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -150, "y": 200}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 275, "y": 125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 275, "y": 125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 275, "y": 125}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 225, "y": -150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 225, "y": -150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 225, "y": -150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -125, "y": 50}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -125, "y": 50}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -125, "y": 50}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -200, "y": -175}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -200, "y": -175}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -200, "y": -175}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": -325}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": -325}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 0, "y": -325}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 425, "y": 150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 425, "y": 150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 425, "y": 150}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": -450, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": -450, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": -450, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 4, "height": 32, 
+                "speed": 0.4,
+                "offset": {"x": 250, "y": 300}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 12, "height": 12, 
+                "speed": 0.4,
+                "offset": {"x": 250, "y": 300}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 40, 
+                "width": 32, "height": 4, 
+                "speed": 0.4,
+                "offset": {"x": 250, "y": 300}
+            }
+        ],
+        "coins": [
+            {"x": -12, "y": 208},
+            {"x": -285, "y": 117},
+            {"x": 242, "y": 71},
+            {"x": 137, "y": -155},
+            {"x": -90, "y": -102},
+            {"x": 0, "y": 40}
+        ]
+    },
+    "Level 13": {
+        "name": "Mind the gap",
+        "player": {"x": 350, "y": -120},
+        "goal": {"x": 350, "y": 240},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": -400, "y": -300,
+                "radius": 500
+            },
+            {
+                "type": "circ",
+                "x": 100, "y": 300,
+                "radius": 200
+            },
+            {
+                "type": "rect",
+                "x": -400, "y": -300,
+                "width": 120, "height": 600,
+                "offset": {"x": 60, "y": 300}
+            },
+            {
+                "type": "rect",
+                "x": -400, "y": -300,
+                "width": 600, "height": 120,
+                "offset": {"x": 360, "y": 60}
+            },
+            {
+                "type": "rect",
+                "x": -400, "y": -300,
+                "width": 270, "height": 120,
+                "offset": {"x": 675, "y": 180}
+            },
+            {
+                "type": "rect",
+                "x": -400, "y": -300,
+                "width": 750, "height": 120,
+                "offset": {"x": 435, "y": 540}
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 600, "height": 1200, 
+                "offset": {"x": -300, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 1200, "height": 600, 
+                "offset": {"x": 0, "y": -300}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": 300,
+                "width": 1200, "height": 600, 
+                "offset": {"x": 300, "y": 300}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 300, "height": 30, 
+                "speed": 0.6, "angle": 0,
+                "offset": {"x": 150, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 50, "height": 30, 
+                "speed": 0.6, "angle": 0,
+                "offset": {"x": 475, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 225, "height": 30, 
+                "speed": 0.6, "angle": 45,
+                "offset": {"x": 112.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 125, "height": 30, 
+                "speed": 0.6, "angle": 45,
+                "offset": {"x": 437.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 300, "height": 30, 
+                "speed": 0.6, "angle": 90,
+                "offset": {"x": 350, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 50, "height": 30, 
+                "speed": 0.6, "angle": 90,
+                "offset": {"x": 25, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 125, "height": 30, 
+                "speed": 0.6, "angle": 135,
+                "offset": {"x": 62.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 225, "height": 30, 
+                "speed": 0.6, "angle": 135,
+                "offset": {"x": 387.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 300, "height": 30, 
+                "speed": 0.6, "angle": 180,
+                "offset": {"x": 150, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 50, "height": 30, 
+                "speed": 0.6, "angle": 180,
+                "offset": {"x": 475, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 225, "height": 30, 
+                "speed": 0.6, "angle": 225,
+                "offset": {"x": 112.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 125, "height": 30, 
+                "speed": 0.6, "angle": 225,
+                "offset": {"x": 437.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 300, "height": 30, 
+                "speed": 0.6, "angle": 270,
+                "offset": {"x": 350, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 50, "height": 30, 
+                "speed": 0.6, "angle": 270,
+                "offset": {"x": 25, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 125, "height": 30, 
+                "speed": 0.6, "angle": 315,
+                "offset": {"x": 62.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -300,
+                "width": 225, "height": 30, 
+                "speed": 0.6, "angle": 315,
+                "offset": {"x": 387.5, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 100, "y": 300,
+                "width": 100, "height": 30, 
+                "speed": 2.4, "angle": 0,
+                "offset": {"x": 50, "y": 0}
+            },
+            {
+                "type": "rect", 
+                "x": 100, "y": 300,
+                "width": 100, "height": 30, 
+                "speed": 2.4, "angle": 180,
+                "offset": {"x": 150, "y": 0}
+            }
+        ]
+    },
+    "Level 14": {
+        "name": "Pentagonal",
+        "player": {"x": -333.5, "y": -209.75},
+        "goal": {"x": 0, "y": 0},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 300
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -200,
+                "width": 120, "height": 240, 
+                "angle": 72,
+                "offset": {"x": -60, "y": 120}
+            },
+            {
+                "type": "rect", 
+                "x": -400, "y": -200,
+                "width": 120, "height": 120, 
+                "angle": 72,
+                "offset": {"x": 30, "y": 60}
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 180, "height": 30, 
+                "speed": 0.4, "angle": 0,
+                "offset": {"x": 0, "y": -240}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 180, "height": 30, 
+                "speed": 0.4, "angle": 72,
+                "offset": {"x": 0, "y": -240}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 180, "height": 30, 
+                "speed": 0.4, "angle": 144,
+                "offset": {"x": 0, "y": -240}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 180, "height": 30, 
+                "speed": 0.4, "angle": -72,
+                "offset": {"x": 0, "y": -240}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 180, "height": 30, 
+                "speed": 0.4, "angle": -144,
+                "offset": {"x": 0, "y": -240}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 120, 
+                "speed": -0.4, "angle": 0,
+                "offset": {"x": 0, "y": -120}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 120, 
+                "speed": -0.4, "angle": 72,
+                "offset": {"x": 0, "y": -120}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 120, 
+                "speed": -0.4, "angle": 144,
+                "offset": {"x": 0, "y": -120}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 120, 
+                "speed": -0.4, "angle": -72,
+                "offset": {"x": 0, "y": -120}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 120, 
+                "speed": -0.4, "angle": -144,
+                "offset": {"x": 0, "y": -120}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 60, 
+                "angle": 0,
+                "offset": {"x": 0, "y": 270}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 60, 
+                "angle": 72,
+                "offset": {"x": 0, "y": 270}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 60, 
+                "angle": 144,
+                "offset": {"x": 0, "y": 270}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 60, 
+                "angle": -72,
+                "offset": {"x": 0, "y": 270}
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 30, "height": 60, 
+                "angle": -144,
+                "offset": {"x": 0, "y": 270}
+            }
+        ],
+        "coins": [
+            {"x": 0, "y": -240},
+            {"x": -228.254, "y": -74.164},
+            {"x": 228.254, "y": -74.164},
+            {"x": -141.068, "y": 194.164},
+            {"x": 141.068, "y": 194.164}
+        ]
+    },
+    "Level 15": {
+        "name": "Segmentation fault",
         "player": {"x": 260, "y": 170},
         "goal": {"x": -260, "y": -170},
         "safeArea": [
