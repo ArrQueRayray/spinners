@@ -6,7 +6,7 @@
 var ctx, BGShapes = [], FGShapes = [], menuUI = [];
 var mainPlayer, mainGoal, safeArea, obstacles, coins;
 var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
-var currentLevel = 0, maxLevel = 1;
+var currentLevel = 0, maxLevel = 1, lastLevel = 20;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
@@ -177,8 +177,12 @@ function loadLevel(level, firstLoad) {
             if (obj.type == "rect") {
                 const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
                 const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
+                const range = Object.hasOwn(obj, "range") ? obj.range : 0;
+                const time = Object.hasOwn(obj, "time") ? obj.time : 1;
+                const delay = Object.hasOwn(obj, "delay") ? obj.delay : 0;
                 const offset = Object.hasOwn(obj, "offset") ? obj.offset : {"x": 0, "y": 0};
-                safeArea[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, angle, color, offset.x, offset.y);
+                safeArea[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, 
+                    angle, color, offset.x, offset.y, range, time, delay);
             } else safeArea[i] = new circ(obj.radius, obj.x, obj.y, color);
         }
 
@@ -189,8 +193,12 @@ function loadLevel(level, firstLoad) {
             if (obj.type == "rect") {
                 const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
                 const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
+                const range = Object.hasOwn(obj, "range") ? obj.range : 0;
+                const time = Object.hasOwn(obj, "time") ? obj.time : 1;
+                const delay = Object.hasOwn(obj, "delay") ? obj.delay : 0;
                 const offset = Object.hasOwn(obj, "offset") ? obj.offset : {"x": 0, "y": 0};
-                obstacles[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, angle, color, offset.x, offset.y);
+                obstacles[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, 
+                    angle, color, offset.x, offset.y, range, time, delay);
             } else {
                 obstacles[i] = new circ(obj.radius, obj.x, obj.y, color);
             }
@@ -346,19 +354,28 @@ function playSound(key, volume=1) {
 }
 
 // Creates a rectangle component with x and y referring to center in preferred coordinate system.
-function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red", offsetX=0, offsetY=0) {
+function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red", offsetX=0, offsetY=0, range=0, time=2, delay=0) {
     this.shape = "rect";
     this.width = width;
     this.height = height;
     this.speed = speed;
     this.angle = angle * Math.PI / 180;
+    this.range = range;
+    this.time = time;
+    this.delay = delay;
     this.x = x;
     this.y = y; 
     this.color = color;
     this.offsetX = offsetX;
     this.offsetY = offsetY;
+    this.initialAngle = this.angle;
     this.update = function() {
-        this.angle += this.speed * Math.PI / 180; 
+        if (this.speed != 0) {
+            this.angle += this.speed * Math.PI / 180; 
+        } else if (this.range != 0) {
+            this.angle = this.initialAngle + this.range * Math.sin(
+                timer / this.time * Math.PI + (delay * 2 * Math.PI)) * Math.PI / 360;
+        }
         this.angle = this.angle % (2 * Math.PI);
         ctx.save();
         ctx.translate(this.x + 480, 360 - this.y);      
@@ -1000,23 +1017,24 @@ function setupLevelSelect(notLoaded) {
     if (notLoaded) setupBGShapes();
 
     // Setup menu UI.
-    menuUI = new Array(32);
+    menuUI = new Array(33);
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 10; j++) {
             const num = j + i * 10;
             menuUI[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
-            if (num + 1 > maxLevel) {
-                menuUI[num].status = "disabled";
-                menuUI[num].text.lines = [""];
-            }
             if (num + 1 < maxLevel) {
                 menuUI[num].status = "cyan";
+            }
+            if (num + 1 > maxLevel || num + 1 > lastLevel) {
+                menuUI[num].status = "disabled";
+                menuUI[num].text.lines = [""];
             }
             menuUI[num].check();
         }
     }
     menuUI[30] = new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 30, 100);
     menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
+    menuUI[32] = new text("More levels to come on my personal website!", 0, -142.5, 30, "red", "center", "Paytone One");
 
     // Setup foreground flash if enabled, along with logo if not loaded.
     if (notLoaded) setupFGShapes();
@@ -1098,6 +1116,7 @@ function updateMute() {
     }
 }
 
+// Loads in the credits screen.
 function setupCredits() {
     // Reset button-related variables and timer.
     mouseTarget = animTarget = -2;
@@ -1121,6 +1140,34 @@ function setupCredits() {
     gameState = "credits";
 }
 
+// Loads in the game completion screen.
+function setupCompletion() {
+    // Reset button-related variables and timer.
+    levelState = "none";
+    mouseTarget = animTarget = -2;
+    setTimeout(clearTarget, gameSettings.fades ? 250 : 0);
+    timerStart = Date.now() / 1000, timer = animStartTime = 0;
+
+    // Setup BG shapes and restart music; it is stopped before loading this screen.
+    setupBGShapes();
+    gameMusic.play();
+
+    // Setup menu button.
+    menuUI = [
+        new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 0, 100),
+        new text("Congratulations on beating the last level of Spinners!", 0, 62.5, 30, "red", "center", "Paytone One"),
+        new text("I planned to add more content for this assignment,\nbut I had to cut things short due to time constraints.\nStill, I'm quite pleased with what I got done.", 0, -45, 30, "red", "center", "Paytone One"),
+        new text("Overall, I enjoyed making this game, and I hope\nyou enjoyed playing it too! More levels coming soon...", 0, -175, 30, "red", "center", "Paytone One"),
+    ];
+
+    // Setup foreground flash if enabled along with logo.
+    setupFGShapes();
+    FGShapes[FGShapes.length - 1].animStart = 0;
+    FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.25 : 0;
+
+    gameState = "complete";
+}
+
 // Updates the canvas every frame.
 function updateGameArea() {
     gameArea.clear();
@@ -1134,6 +1181,7 @@ function updateGameArea() {
         case "select":
         case "settings":
         case "credits":
+        case "complete":
             menuLogic();
             break;
         case "level":
@@ -1193,6 +1241,7 @@ function menuLogic() {
         // which animates alongside a fade before performng the button behavior.
         menuUI.forEach(element => { 
             if (element.id == animTarget) {
+                FGShapes[FGShapes.length - 1].color = "black";
                 // This handles button animations. Most buttons occur with a screen transition, with the
                 // exception of some buttons in the settings menu, which also have no fadeout.
                 const settingsToggle = gameState == "settings" && animTarget < 4;
@@ -1298,8 +1347,9 @@ function levelLogic() {
     // or the next level is loaded.
     switch (levelState) {
         case "complete":
-            if (currentLevel == -1) {
-                // For the "reset data" level, remove button and stop music.
+            console.log(currentLevel + " " + lastLevel);
+            if (currentLevel == -1 || currentLevel == lastLevel) {
+                // For the "reset data" level or last level, remove button and stop music.
                 menuUI[0] = [new circ(0)];
                 gameMusic.pause();
                 gameMusic.currentTime = 0;
@@ -1321,14 +1371,18 @@ function levelLogic() {
                         maxLevel++;
                         localStorage.setItem("maxLevel", maxLevel);
                     }
-                    loadLevel("Level " + ++currentLevel, false);
+                    if (currentLevel == lastLevel) {
+                        gameState = "complete";
+                        FGShapes = [FGShapes[FGShapes.length - 1]];
+                        FGShapes[0].update();
+                        setupCompletion(); 
+                    } else loadLevel("Level " + ++currentLevel, false);
                 }
             }
             break;
         case "failed":
             if (levelFailedAnimation()) loadLevel("Level " + currentLevel, false);
             break;
-        
     }
 }
 
