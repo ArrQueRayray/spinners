@@ -320,6 +320,16 @@ var gameArea = {
                     console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
                     fetchLevels();
                     break;
+                case "Backslash":
+                    // For debugging purposes only, auto-completes the current level.
+                    if (gameState == "level" && levelState == "none") {
+                        mainPlayer.circ.x = mainGoal.x;
+                        mainPlayer.circ.y = mainGoal.y;
+                        coins.forEach(coin => {
+                            coin.animate();
+                        });
+                    }
+                    break;
             }
         })
         window.addEventListener('keyup', function (e) {
@@ -960,13 +970,7 @@ function singleButtonScreen() {
     }
 
     // The start and level screens consists of only a single true button.
-    if (mouseTarget != -2) {
-        mouseTarget = -1;
-        menuUI[0].update();
-
-        // Check if mouse is hovering over button.
-        menuUI[0].check();
-    } else if (animTarget > -1) {
+    if (animTarget > -1) {
         // Play button and fade animations until done.
         FGShapes[FGShapes.length - 1].color = "black";
         const buttonAnimDone = !menuUI[0].animate(0.25);
@@ -981,9 +985,14 @@ function singleButtonScreen() {
             else if (currentLevel == -1) setupSettings(true);
             else setupLevelSelect(true);
         }
-    } else if (typeof menuUI[0].update === "function") {
-        menuUI[0].update();
-        menuUI[0].check();
+    } else {
+        if (mouseTarget != -2) mouseTarget = -1;
+        if (typeof menuUI[0].update === "function") {
+            menuUI[0].update();
+
+            // Check if mouse is hovering over button.
+            menuUI[0].check();
+        }
     }
 
     // On normal levels, update score visually.
@@ -1349,16 +1358,6 @@ function levelLogic() {
     mainGoal.update();
     mainPlayer.update();
 
-    // If player is no longer alive, the level is failed.
-    if (!playerIsAlive() && levelState == "none") {
-        mainPlayer.controllable = false; 
-        mouseTarget = animTarget = -2;
-        levelState = "failed";
-        animStartTime = timer;
-        playSound("hit");
-        playSound("ouch");
-    }
-
     // If all coins are collected and player is close enough to the goal, the level is officially completed.
     if (coinCount == 0 && mainGoal.isClose() && levelState == "none") {
         mainPlayer.controllable = false; 
@@ -1367,6 +1366,16 @@ function levelLogic() {
         animStartTime = timer;
         playSound("enter");
         setTimeout(playSound, 250, "wink");
+    }
+
+    // If player is no longer alive, the level is failed.
+    if (!playerIsAlive() && levelState == "none") {
+        mainPlayer.controllable = false; 
+        mouseTarget = animTarget = -2;
+        levelState = "failed";
+        animStartTime = timer;
+        playSound("hit");
+        playSound("ouch");
     }
 
     // When the level is over, an animation is played before the level is either reloaded
