@@ -36,7 +36,7 @@ var gameSettings = {
     fades: true
 };
 var mouseTarget, animTarget;
-let gameState, levelState, coinCount = 0;
+let gameState, levelState, score, highScore, coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
 
@@ -104,9 +104,9 @@ function clearTarget() {
 
 // Loads objects and sets variables required for playing through a new level.
 function loadLevel(level, firstLoad) {
-    // Setup timer and states
+    // Setup timer and states.
     timerStart = Date.now() / 1000, timer = animStartTime = 0;
-    gameState = "level", levelState = "none";
+    gameState = "level", levelState = "none", score = 1000;
     FGShapes[FGShapes.length - 1].animStart = 0;
     FGShapes[FGShapes.length - 1].duration = gameSettings.fades ? 0.5 : 0;
     mouseTarget = animTarget = -2;
@@ -115,12 +115,23 @@ function loadLevel(level, firstLoad) {
     // If a first level load, setup the menu button.
     if (firstLoad) {
         if (currentLevel == -1) menuUI = [new button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
-        else menuUI = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80)];
+        else {
+            menuUI = [new button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80),
+                new button(-480, 360, new rect(245, 140), new text("Score: 999\nBest: N/A", 0.25, -1.4, 24), 1, 80)];
+            menuUI[1].status = "white";
+            menuUI[1].text.align = "left";
+            menuUI[1].check();
+        }
         menuUI[0].status = "white";
     }
 
+    // Retrieve and update high score.
+    highScore = Number(localStorage.getItem("score" + currentLevel));
+    if (currentLevel != -1) menuUI[1].text.lines[1] = "Best: " + highScore;
+
     // Get desired level from levels.json if possible.
     try {
+        // Load placeholder level in case level doesn't exist.
         loadedLevel = {"name": "Dummy level",
             "text": [{"x": 0, "y": 100, "string": "Invalid level loaded."}],
             "player": {"x": -240, "y": 0}, "goal": {"x": 240, "y": 0},
@@ -948,7 +959,7 @@ function singleButtonScreen() {
         if (gameSettings.shapes) BGShapes.forEach(element => {element.update()});
     }
 
-    // The start and level screens consists of only a single button.
+    // The start and level screens consists of only a single true button.
     if (mouseTarget != -2) {
         mouseTarget = -1;
         menuUI[0].update();
@@ -973,6 +984,11 @@ function singleButtonScreen() {
     } else if (typeof menuUI[0].update === "function") {
         menuUI[0].update();
         menuUI[0].check();
+    }
+
+    // On normal levels, update score visually.
+    if (gameState == "level" && currentLevel != -1) {
+        menuUI[1].update();
     }
 
     // Upon a restart, fade in if enabled.
@@ -1007,6 +1023,12 @@ function setupMainMenu(notLoaded) {
 
 // Loads in the level select.
 function setupLevelSelect(notLoaded) {
+    // Calculate total score.
+    let totalScore = 0;
+    for (let i = 1; i <= lastLevel; i++) {
+        totalScore += Number(localStorage.getItem("score" + i));
+    }
+
     // Reset button-related variables and timer.
     levelState = "none";
     mouseTarget = animTarget = -2;
@@ -1017,11 +1039,11 @@ function setupLevelSelect(notLoaded) {
     if (notLoaded) setupBGShapes();
 
     // Setup menu UI.
-    menuUI = new Array(33);
+    menuUI = new Array(35);
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 10; j++) {
             const num = j + i * 10;
-            menuUI[num] = new button(j * 70 - (70 * 9 / 2), i * -70, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
+            menuUI[num] = new button(j * 70 - (70 * 9 / 2), i * -70 - 10, new rect(55, 55), new text(String(num + 1), 0, 0, 30), num, 55);
             if (num + 1 < maxLevel) {
                 menuUI[num].status = "cyan";
             }
@@ -1034,7 +1056,9 @@ function setupLevelSelect(notLoaded) {
     }
     menuUI[30] = new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 30, 100);
     menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
-    menuUI[32] = new text("More levels to come on my personal website!", 0, -142.5, 30, "red", "center", "Paytone One");
+    menuUI[32] = new text("", 0, 60, 18, "red", "center", "Paytone One");
+    menuUI[33] = new text("Total Score: " + totalScore, 0, -225, 24, "red", "center", "Paytone One");
+    menuUI[34] = new text("More levels to come on my personal website!", 0, -152.5, 30, "red", "center", "Paytone One");
 
     // Setup foreground flash if enabled, along with logo if not loaded.
     if (notLoaded) setupFGShapes();
@@ -1228,11 +1252,13 @@ function menuLogic() {
         });
         // On the level select, hovering over an unlocked level brings up its name.
         if (gameState == "select") {
-            menuUI[31].lines = [""];
+            menuUI[31].lines = menuUI[32].lines = [""];
             if (mouseTarget > -1 && mouseTarget != 30) {
                 const levelString = "Level " + (mouseTarget + 1);
                 if (Object.hasOwn(levels, levelString) && Object.hasOwn(levels[levelString], "name")) {
                     menuUI[31].lines = [levels[levelString].name];
+                    highScore = localStorage.getItem("score" + (mouseTarget + 1));
+                    if (highScore) menuUI[32].lines = ["Score: " + highScore];
                 }
             }
         }
@@ -1344,22 +1370,29 @@ function levelLogic() {
     }
 
     // When the level is over, an animation is played before the level is either reloaded
-    // or the next level is loaded.
+    // or the next level is loaded. Score is updated otherwise.
     switch (levelState) {
         case "complete":
-            console.log(currentLevel + " " + lastLevel);
             if (currentLevel == -1 || currentLevel == lastLevel) {
                 // For the "reset data" level or last level, remove button and stop music.
                 menuUI[0] = [new circ(0)];
                 gameMusic.pause();
                 gameMusic.currentTime = 0;
             }
+            // If applicable, save score, or update if it's higher.
+            if (currentLevel != -1 && (!highScore || Number(highScore) < score)) {
+                menuUI[1].text.lines[1] = ["Best: " + score];
+                localStorage.setItem("score" + currentLevel, score);
+            }
             if (levelCompleteAnimation()) {
                 if (currentLevel == -1) {
-                    // For the "reset data" level, reset progression, save to local storage, and restart game.
+                    // For the "reset data" level, reset progression and scores, save to local storage, and restart game.
                     if (gameState != "reset") {
                         maxLevel = 1;
                         localStorage.setItem("maxLevel", maxLevel);
+                        for (let i = 1; i <= lastLevel; i++) {
+                            localStorage.removeItem("score" + i);
+                        }
                         gameState = "reset";
                         FGShapes = [FGShapes[FGShapes.length - 1]];
                         FGShapes[0].update();
@@ -1374,7 +1407,7 @@ function levelLogic() {
                     if (currentLevel == lastLevel) {
                         gameState = "complete";
                         FGShapes = [FGShapes[FGShapes.length - 1]];
-                        FGShapes[0].update();
+                        if (gameSettings.fades) FGShapes[0].update();
                         setupCompletion(); 
                     } else loadLevel("Level " + ++currentLevel, false);
                 }
@@ -1383,6 +1416,11 @@ function levelLogic() {
         case "failed":
             if (levelFailedAnimation()) loadLevel("Level " + currentLevel, false);
             break;
+        default:
+            if (currentLevel != -1) {
+                score = Math.max(0, Math.floor(1000 - timer * 10));
+                menuUI[1].text.lines[0] = ["Score: " + score];
+            }
     }
 }
 

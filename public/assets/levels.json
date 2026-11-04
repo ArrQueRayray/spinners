@@ -2,7 +2,7 @@
     "Level 1": {
         "name": "Spinner",
         "text": [
-            {"x": 0, "y": 300, "size": 48,
+            {"x": 0, "y": 300, "size": 36,
                 "string": "Use WASD or arrow keys to reach the goal."
             }
         ],
@@ -158,94 +158,95 @@
     },
     "Level 4": {
         "name": "Rectangle track",
+        "scale": 0.8,
         "text": [
-            {"x": 0, "y": 0, "size": 72,
+            {"x": 0, "y": 0, "size": 60,
                 "string": "Have fun!"
             }
         ],
-        "player": {"x": -400, "y": 300},
-        "goal": {"x": 400, "y": -300},
+        "player": {"x": -320, "y": 240},
+        "goal": {"x": 320, "y": -240},
         "safeArea": [
             {
                 "type": "rect",
                 "x": 0, "y": 0,
-                "width": 800, "height": 600
+                "width": 640, "height": 480
             },
             {
                 "type": "rect",
-                "x": -375, "y": 275,
-                "width": 150, "height": 150
+                "x": -300, "y": 220,
+                "width": 120, "height": 120
             },
             {
                 "type": "rect",
-                "x": 375, "y": -275,
-                "width": 150, "height": 150
+                "x": 300, "y": -220,
+                "width": 120, "height": 120
             }
         ],
         "obstacles": [
             {
                 "type": "rect", 
                 "x": 0, "y": 0,
-                "width": 400, "height": 200
+                "width": 320, "height": 160
             },
             {
                 "type": "rect", 
-                "x": -300, "y": 0,
-                "width": 202, "height": 18, 
+                "x": -240, "y": 0,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": -300, "y": 200,
-                "width": 202, "height": 18, 
+                "x": -240, "y": 160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": -300, "y": -200,
-                "width": 202, "height": 18, 
+                "x": -240, "y": -160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": -100, "y": 200,
-                "width": 202, "height": 18, 
+                "x": -80, "y": 160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": -100, "y": -200,
-                "width": 202, "height": 18, 
+                "x": -80, "y": -160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": 100, "y": 200,
-                "width": 202, "height": 18, 
+                "x": 80, "y": 160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": 100, "y": -200,
-                "width": 202, "height": 18, 
+                "x": 80, "y": -160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": 300, "y": 0,
-                "width": 202, "height": 18, 
+                "x": 240, "y": 0,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": 300, "y": 200,
-                "width": 202, "height": 18, 
+                "x": 240, "y": 160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             },
             {
                 "type": "rect", 
-                "x": 300, "y": -200,
-                "width": 202, "height": 18, 
+                "x": 240, "y": -160,
+                "width": 162, "height": 15, 
                 "speed": 0.75, "angle": 0
             }
         ]
@@ -359,8 +360,8 @@
     "Level 6": {
         "name": "Coins",
         "text": [
-            {"x": -425, "y": 225, "size": 60, "align": "left",
-                "string": "Check out these\nyellow coins!"
+            {"x": -425, "y": 225, "size": 50, "align": "left",
+                "string": "Check out all these\nshiny yellow coins!"
             },
             {"x": -425, "y": 75, "size": 30, "align": "left",
                 "string": "By the way, you gotta get\nall of them to make\nthe goal appear."
@@ -849,14 +850,14 @@
     "Level 11": {
         "name": "...uh oh",
         "text": [
-            {"x": -175, "y": 150, "align": "right",
-                "string": "Unfortunately,\nwe seem to have\nrun into an error\nthat broke the\nneat formation\n of shapes in this\nparticular level."
+            {"x": -175, "y": 137.5, "size": 40, "align": "right",
+                "string": "Unfortunately,\nwe ran into an\nerror that broke\nthe formation\nof shapes here."
             },
-            {"x": -175, "y": -75, "size": 28, "align": "right",
+            {"x": -175, "y": -37.5, "size": 28, "align": "right",
                 "string": "We sincerely apologize\nfor the inconvenience."
             },
-            {"x": -205, "y": -212.5, "size": 20, "align": "right",
-                "string": "In the meantime, please\nmake your way to the goal\nwhile we work to repair\nthis level. It shall still be\nin a beatable state, although\nthe spinners are off-center."
+            {"x": -175, "y": -125, "size": 18, "align": "right",
+                "string": "In the meantime, please make your\nway to the goal as we fix this level.\nBe wary; the spinners are off-center."
             }
         ],
         "player": {"x": -123, "y": -283},
@@ -1992,8 +1993,8 @@
         "name": "Negative fish",
         "scale": 1.25,
         "text": [
-            {"x": -345, "y": 275, "size": 32,
-                "string": "Oh yeah, this has\nbeen possible\nthe whole time."
+            {"x": -345, "y": -275, "size": 32,
+                "string": "Oh yeah, they can\ndo this too."
             }
         ],
         "player": {"x": 320, "y": 200},
@@ -2217,7 +2218,7 @@
         ],
         "coins": [
             {"x": -380, "y": -240},
-            {"x": -410, "y": 290}
+            {"x": -450, "y": 175}
         ]
     },
     "Level 20": {
