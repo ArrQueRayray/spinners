@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<!-- see: https://www.w3schools.com/graphics/game_components.asp -->
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
 body {
-    width: 50%;
     margin: 0 auto;
     background-color: black;
 }
@@ -13,8 +12,15 @@ canvas {
     aspect-ratio: 4 / 3;
     border: 6px dashed #800;
     background-color: #000000;
-    width: auto;
-    height: stretch;
+    width: stretch;
+    height: auto;
+}
+
+@media (min-aspect-ratio: 4/3) {
+    canvas {
+        width: auto;
+        height: stretch;
+    }
 }
 </style>
 </head>
