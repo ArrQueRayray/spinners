@@ -10,21 +10,8 @@ var currentLevel = 0, maxLevel = 1, lastLevel = 20;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
-var gameMusic = new Audio("assets/audio/spinners.ogg");
-gameMusic.preload = true;
-gameMusic.loop = true;
-gameMusic.volume = 0.2;
-let soundEffects = {
-    appear: new Audio("assets/audio/appear.ogg"),
-    click: new Audio("assets/audio/click.ogg"),
-    coin: new Audio("assets/audio/coin.ogg"),
-    enter: new Audio("assets/audio/enter.ogg"),
-    hit: new Audio("assets/audio/hit.ogg"),
-    ouch: new Audio("assets/audio/ouch.ogg"),
-    wink: new Audio("assets/audio/wink.ogg")
-};
-// Note: Sound effects may lag a bit. This is unavoidable unless using audio buffers, which is well out of scope
-// for this assignment.
+var gameMusic, soundEffects, refreshInterval;  
+fetchAudio();
 
 // Declare and/or initialize other gameplay states and properties.
 var mainMenuVisited = false;
@@ -92,6 +79,49 @@ function startGame(firstLoad) {
 async function fetchLevels() {
     try {
         levels = await fetch("assets/levels.json").then((lv) => {return lv.json();});
+    } catch (error) {
+        console.error("Levels not found");
+    }
+}
+
+// Fetches audio files to allow them to encode.
+async function fetchAudio() {
+    try {
+        // Sets up text files to fetch from.
+        let files = [
+            "assets/misc/spinners.txt",
+            "assets/misc/appear.txt",
+            "assets/misc/click.txt",
+            "assets/misc/coin.txt",
+            "assets/misc/enter.txt",
+            "assets/misc/hit.txt",
+            "assets/misc/ouch.txt",
+            "assets/misc/wink.txt"
+        ];
+        
+        for (let i = 0; i < files.length; i++) {
+            const response = await fetch(files[i]);
+            
+            if (!response.ok) {
+              throw new Error(`Error: ${response.status}`);
+            }
+        
+            files[i] = await response.text(); 
+        }
+        
+        gameMusic = new Audio(`data:audio/ogg;base64,${files[0]}`);
+        gameMusic.preload = true;
+        gameMusic.loop = true;
+        gameMusic.volume = 0.2;
+        soundEffects = {
+            appear: new Audio(`data:audio/ogg;base64,${files[1]}`),
+            click: new Audio(`data:audio/ogg;base64,${files[2]}`),
+            coin: new Audio(`data:audio/ogg;base64,${files[3]}`),
+            enter: new Audio(`data:audio/ogg;base64,${files[4]}`),
+            hit: new Audio(`data:audio/ogg;base64,${files[5]}`),
+            ouch: new Audio(`data:audio/ogg;base64,${files[6]}`),
+            wink: new Audio(`data:audio/ogg;base64,${files[7]}`)
+        };
     } catch (error) {
         console.error("Levels not found");
     }
@@ -262,6 +292,9 @@ var gameArea = {
         // The mouse is used to guarantee focus on the window, allowing for sound playback, and
         // eventually interacting with menu buttons.
         window.addEventListener('mousedown', function (e) {
+            if (!refreshInterval) {
+                refreshInterval = setInterval(refreshSounds, 10000);
+            }
             if (mouseTarget > -1) {
                 // If interacting with the sound button, the setting must be immediately updated.
                 if (gameState == "settings" && mouseTarget == 1) {
@@ -322,6 +355,7 @@ var gameArea = {
                     break;
                 case "Backslash":
                     // For debugging purposes only, auto-completes the current level.
+                    /*
                     if (gameState == "level" && levelState == "none") {
                         mainPlayer.circ.x = mainGoal.x;
                         mainPlayer.circ.y = mainGoal.y;
@@ -329,6 +363,7 @@ var gameArea = {
                             coin.animate();
                         });
                     }
+                    */
                     break;
             }
         })
@@ -362,16 +397,26 @@ var gameArea = {
 }
 
 // Plays sound, looking up string in soundEffects and setting volume.
-function playSound(key, volume=1) {
+function playSound(key, volume=1, interruptable=true) {
     if (!gameSettings.allAudio || !gameSettings.sound) volume = 0;
     try {
         const soundCheck = soundEffects[key];
-        soundEffects[key].currentTime = 0;
-        soundEffects[key].volume = volume;
-        soundEffects[key].play();
+        if (interruptable || (soundCheck.paused || soundCheck.ended || soundEffects[key].currentTime == 0)) {
+            soundEffects[key].currentTime = 0;
+            soundEffects[key].volume = volume;
+            soundEffects[key].play();
+        } else {
+            console.warn("Attempted to interrupt " + key);
+        }
     } catch (error) {
         console.error("Sound not found");
     }
+}
+
+function refreshSounds() {
+    const soundList = ["appear", "click", "coin", "enter", "hit", "ouch", "wink"];
+    soundList.forEach((key) => {playSound(key, 0, false)});
+    console.log("Sounds refreshed");
 }
 
 // Creates a rectangle component with x and y referring to center in preferred coordinate system.
@@ -988,10 +1033,17 @@ function singleButtonScreen() {
     } else {
         if (mouseTarget != -2) mouseTarget = -1;
         if (typeof menuUI[0].update === "function") {
-            menuUI[0].update();
-
-            // Check if mouse is hovering over button.
-            menuUI[0].check();
+            if (mainMenuVisited || gameState != "none" || timer > 1) {
+                menuUI[0].update();
+                
+                // Check if mouse is hovering over button.
+                menuUI[0].check();
+            } else {
+                const loadString = ["Loading.", "Loading..", "Loading..."];
+                const t = Math.floor((timer * 6) % 3);
+                const loadText = new text(loadString[t], 0, 0, 60, "red", "center", "Paytone One");
+                loadText.update();
+            }
         }
     }
 
@@ -1000,8 +1052,8 @@ function singleButtonScreen() {
         menuUI[1].update();
     }
 
-    // Upon a restart, fade in if enabled.
-    if (mainMenuVisited && gameSettings.fades) animateFG(0, 0.5);
+    // Fade in if enabled.
+    if (gameSettings.fades) animateFG(0, mainMenuVisited ? 0.5 : 1);
 }
 
 // Loads in the main menu.
@@ -1098,7 +1150,8 @@ function setupSettings(notLoaded) {
         new text("Game Music", -125, 30, 36, "red", "right", "Paytone One"),
         new text("Game Sound", -125, -50, 36, "red", "right", "Paytone One"),
         new text("BG Shapes", -125, -130, 36, "red", "right", "Paytone One"),
-        new text("Screen Fades", 275, 30, 36, "red", "right", "Paytone One")
+        new text("Screen Fades", 275, 30, 36, "red", "right", "Paytone One"),
+        new text("v1.0", -475, -345, 24, "red", "left", "Paytone One")
     ];
 
     // Update button states.
@@ -1189,7 +1242,7 @@ function setupCompletion() {
     menuUI = [
         new button(0, -300, new rect(200, 75), new text("Menu", 0, 0, 30), 0, 100),
         new text("Congratulations on beating the last level of Spinners!", 0, 62.5, 30, "red", "center", "Paytone One"),
-        new text("I planned to add more content for this assignment,\nbut I had to cut things short due to time constraints.\nStill, I'm quite pleased with what I got done.", 0, -45, 30, "red", "center", "Paytone One"),
+        new text("From a Scratch project in 2017, to a 2026 game coded in\nJavaScript for a college assignment. It's been a long\njourney, and it's been  fun seeing it come together.", 0, -45, 30, "red", "center", "Paytone One"),
         new text("Overall, I enjoyed making this game, and I hope\nyou enjoyed playing it too! More levels coming soon...", 0, -175, 30, "red", "center", "Paytone One"),
     ];
 
@@ -1206,7 +1259,7 @@ function updateGameArea() {
     gameArea.clear();
     gameArea.scaleCanvas();
     timer = Date.now() / 1000 - timerStart;
-    gameMusic.volume = (!gameSettings.allAudio || !gameSettings.music) ? 0 : 0.2;
+    if (gameMusic) gameMusic.volume = (!gameSettings.allAudio || !gameSettings.music) ? 0 : 0.2;
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
