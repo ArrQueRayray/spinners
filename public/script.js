@@ -162,8 +162,8 @@ function loadLevel(level, firstLoad) {
     // Get desired level from levels.json if possible.
     try {
         // Load placeholder level in case level doesn't exist.
-        loadedLevel = {"name": "Dummy level",
-            "text": [{"x": 0, "y": 100, "string": "Invalid level loaded."}],
+        loadedLevel = {"name": "Oh noes!",
+            "text": [{"x": 0, "y": 100, "string": "Error! Please contact ArrQue about this."}],
             "player": {"x": -240, "y": 0}, "goal": {"x": 240, "y": 0},
             "safeArea": [{"type": "rect", "x": 0, "y": 0, "width": 600, "height": 120}],
             "obstacles": [{"type": "rect", "x": 0, "y": 0, "width": 122, "height": 24, "speed": 24}]};
@@ -177,83 +177,50 @@ function loadLevel(level, firstLoad) {
 
         // All planned levels have a solid red background, and some may have text which goes on the foreground.
         const flash = FGShapes[FGShapes.length - 1];
-        if (Object.hasOwn(loadedLevel, "text")) {
-            FGShapes = new Array(2 + loadedLevel.text.length);
+        const levelTitle = new text(`${level}: ${loadedLevel.name}`, -475, -345, 24, "black", "left");
+        const levelText = (loadedLevel.text ?? []).map((obj) => {
+            const { string, x, y, size = 36, color = "black", align = "center" } = obj;
+            return new text(string, x, y, size, color, align);
+        });
 
-            let iter = 0;
-            loadedLevel.text.forEach((obj) => {
-                iter++;
-                const size = Object.hasOwn(obj, "size") ? obj.size : 36;
-                const color = Object.hasOwn(obj, "color") ? obj.color : "black";
-                const align = Object.hasOwn(obj, "align") ? obj.align : "center";
-                FGShapes[iter] = new text(obj.string, obj.x, obj.y, size, color, align);
-            });
-        } else FGShapes = new Array(2);
+        FGShapes = [levelTitle, ...levelText, flash];
 
-        BGShapes = new Array(17);
-        BGShapes[0] = new rect(960, 720);
-        BGShapes[0].color = "red";
-        BGShapes[0].main = true;
-        for (let i = 1; i <= 16; i++) {
-            BGShapes[i] = new rect(60 + Math.random() * 400);
-            BGShapes[i].height = BGShapes[i].width;
-            BGShapes[i].x = Math.random() * 320 - 160;
-            BGShapes[i].y = Math.random() * 240 - 120;
-            BGShapes[i].x += (i % 4 * (640 / 3)) - 320;
-            BGShapes[i].y += (Math.ceil(i / 4 - 1) * 160) - 240;
-            BGShapes[i].angle = Math.random() * 360;
-            BGShapes[i].speed = (Math.random() + 0.5) * (Math.round(Math.random()) - 0.5);
-            BGShapes[i].color = "rgba(255, 0, 0, " + (Math.ceil(Math.random() * 3) / 32) + ")";
-        }
+        const redBG = Object.assign(new rect(960, 720), { main: true });
+        const BGSquares = Array.from({ length: 16 }, (_, i) => {
+            const size = 60 + Math.random() * 400;
+            const speed = (Math.random() + 0.5) * (Math.round(Math.random()) - 0.5);
+            const x = (Math.random() * 320 - 160) + ((i % 4) * (640 / 3) - 320);
+            const y = (Math.random() * 240 - 120) + (Math.ceil(i / 4) * 160 - 240);
+            const angle = Math.random() * 360;
+            const alpha = Math.ceil(Math.random() * 3) / 32;
 
-        FGShapes[FGShapes.length - 1] = flash;
-        FGShapes[0] = new text(level + ": " + loadedLevel.name, -475, -345, 24, "black", "left");
+            return new rect(size, size, speed, x, y, angle, `rgba(255, 0, 0, ${alpha})`);
+        });
+
+        BGShapes = [redBG, ...BGSquares];
 
         // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
 
-        safeArea = new Array(loadedLevel.safeArea.length);
-        for (let i = 0; i < loadedLevel.safeArea.length; i++) {
-            const obj = loadedLevel.safeArea[i];
-            const color = Object.hasOwn(obj, "color") ? obj.color : "black";
+        const shapeSetter = function(obj, mainColor) {
             if (obj.type == "rect") {
-                const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
-                const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
-                const range = Object.hasOwn(obj, "range") ? obj.range : 0;
-                const time = Object.hasOwn(obj, "time") ? obj.time : 1;
-                const delay = Object.hasOwn(obj, "delay") ? obj.delay : 0;
-                const offset = Object.hasOwn(obj, "offset") ? obj.offset : {"x": 0, "y": 0};
-                safeArea[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, 
-                    angle, color, offset.x, offset.y, range, time, delay);
-            } else safeArea[i] = new circ(obj.radius, obj.x, obj.y, color);
-        }
-
-        obstacles = new Array(loadedLevel.obstacles.length);
-        for (let i = 0; i < loadedLevel.obstacles.length; i++) {
-            const obj = loadedLevel.obstacles[i];
-            const color = Object.hasOwn(obj, "color") ? obj.color : "red";
-            if (obj.type == "rect") {
-                const speed = Object.hasOwn(obj, "speed") ? obj.speed : 0;
-                const angle = Object.hasOwn(obj, "angle") ? obj.angle : 0;
-                const range = Object.hasOwn(obj, "range") ? obj.range : 0;
-                const time = Object.hasOwn(obj, "time") ? obj.time : 1;
-                const delay = Object.hasOwn(obj, "delay") ? obj.delay : 0;
-                const offset = Object.hasOwn(obj, "offset") ? obj.offset : {"x": 0, "y": 0};
-                obstacles[i] = new rect(obj.width, obj.height, speed, obj.x, obj.y, 
-                    angle, color, offset.x, offset.y, range, time, delay);
+                const { width = 100, height = 100, speed = 0, x = 0, y = 0, angle = 0, color = mainColor,
+                    offset: { x: offsetX = 0, y: offsetY = 0 } = {}, range = 0, time = 1, delay = 0 } = obj;
+                return new rect(width, height, speed, x, y, angle, color,
+                    offsetX, offsetY, range, time, delay);
             } else {
-                obstacles[i] = new circ(obj.radius, obj.x, obj.y, color);
+                const { radius = 100, x = 0, y = 0, color = mainColor } = obj;
+                return new circ(radius, x, y, color);
             }
-        }
+        };
+
+        safeArea = (loadedLevel.safeArea ?? []).map((obj) => shapeSetter(obj, "black"));
+        obstacles = (loadedLevel.obstacles ?? []).map((obj) => shapeSetter(obj, "red"));
 
         // Coins are stored similarly, but with less customization.
-        if (Object.hasOwn(loadedLevel, "coins")) {
-            coins = new Array(loadedLevel.coins.length);
 
-            for (let i = 0; i < loadedLevel.coins.length; i++) {
-                coins[i] = new coin(loadedLevel.coins[i].x, loadedLevel.coins[i].y);
-            }
-        } else coins = [];
+        coins = (loadedLevel.coins ?? []).map((obj) => new coin(obj.x, obj.y));
         coinCount = coins.length;
+
 
         // Player and goal are stored as variables, given defined coordinates
         mainPlayer = new player(loadedLevel.player.x, loadedLevel.player.y);
@@ -520,7 +487,7 @@ function player(x=0, y=0) {
         }
 
         // If no keys are held or all held keys cancel out each other, this brings the player to a stop.
-        function limit(val) {
+        const limit = function (val) {
             let v = val;
             if (v) {
                 if (Math.abs(v) <= accel) return 0;
@@ -564,9 +531,9 @@ function player(x=0, y=0) {
         const levelCompleteStart = levelState == "complete" && timer - animStartTime < 0.25;
 
         // Eye shapes are prepared.
-        const circleEye = (offset) => {centerFillCirc(middle + offset * fullScale, height, 3.2 * fullScale);};
-        const lineEye = (offset, angle) => {centerFillRect(middle + offset * fullScale, height, 9.6 * fullScale, 2 * fullScale, angle);};
-        const arcEye = function(offset) {
+        const circleEye = (offset) => centerFillCirc(middle + offset * fullScale, height, 3.2 * fullScale);
+        const lineEye = (offset, angle) => centerFillRect(middle + offset * fullScale, height, 9.6 * fullScale, 2 * fullScale, angle);
+        const arcEye = (offset) => {
             ctx.beginPath();
             ctx.arc((middle + offset * fullScale) + 480, 360 - height - 1.6 * fullScale, 3.2 * fullScale, 0, Math.PI);
             ctx.lineWidth = 2 * fullScale;
