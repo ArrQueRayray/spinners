@@ -1,7 +1,7 @@
 import { updateGameArea } from '../script.js';
 
 // Setup game area and canvas scaling.
-var ctx;
+export let ctx;
 
 export var gameArea = {
     canvas: document.createElement("canvas"),
@@ -26,5 +26,3 @@ export var gameArea = {
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 }
-
-export var ctx;

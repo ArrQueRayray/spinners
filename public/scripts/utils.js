@@ -44,7 +44,7 @@ export function circ(radius=40, x=0, y=0, color="black") {
     this.update = function() {
         ctx.beginPath();
         ctx.fillStyle = this.color;
-        centerFillCirc(this.x, this.y, this.radius);
+        drawCirc(this.x, this.y, this.radius);
     }
 }
 

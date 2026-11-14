@@ -1,8 +1,10 @@
-// I'm much more used to working with a coordinate system where the middle of the canvas is the origin. For all
-// intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
+// Note: The top-left corner in the preferred coordinate system is (-480, 360).
 "use strict";
+
+// Import variables and functions from JS files.
 import { gameArea, ctx } from './scripts/canvas.js';
-import { rect, circ, text, drawRect, drawCirc, inShape } from './scripts/utils.js';
+import { rect, circ, text, drawRect, drawCirc, sqDist, inShape } from './scripts/utils.js';
+import * as Audio from './scripts/audio.js';
 
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
 let BGShapes = [], FGShapes = [], menuUI = [];
@@ -12,32 +14,33 @@ let currentLevel = 0, lastLevel = 26;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
-let gameMusic, soundEffects, refreshInterval;  
-fetchAudio();
+let refreshInterval;
+Audio.fetchAudio();
 
 // Declare and/or initialize other gameplay states and properties.
 let mainMenuVisited = false;
-let gameSettings = {
-    music: true,
-    sound: true,
-    allAudio: true,
-    shapes: true,
-    fades: true
-};
 let mouseTarget, animTarget;
 let gameState, levelState, score, highScore, coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
 
 // Setup fonts to be used in-game.
-const mainFont = new FontFace("Francois One", 'url(assets/misc/FrancoisOne.ttf)');
-const logoFont = new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)');
-mainFont.load().then((font) => {document.fonts.add(font)});
-logoFont.load().then((font) => {document.fonts.add(font)});
+new FontFace("Francois One", 'url(assets/misc/FrancoisOne.ttf)').load().then((font) => {document.fonts.add(font)});
+new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)').load().then((font) => {document.fonts.add(font)});
 
 // Retrieve save data from local storage if available.
 let maxLevel = Number(localStorage.getItem("maxLevel"));
 if (Number.isNaN(maxLevel) || maxLevel < 1 || maxLevel > lastLevel + 1) maxLevel = 1;
+
+// Declare and retrieve settings data.
+export let gameSettings = {
+    music: true,
+    sound: true,
+    allAudio: true,
+    shapes: true,
+    fades: true
+};
+
 ["music", "sound", "shapes", "fades"].forEach(setting => {
     if (localStorage.getItem(setting))
         gameSettings[setting] = localStorage.getItem(setting) == "true";
@@ -88,49 +91,6 @@ function startGame(firstLoad) {
 async function fetchLevels() {
     try {
         levels = await fetch("assets/levels.json").then((lv) => {return lv.json();});
-    } catch (error) {
-        console.error("Levels not found");
-    }
-}
-
-// Fetches audio files to allow them to encode.
-async function fetchAudio() {
-    try {
-        // Sets up text files to fetch from.
-        let files = [
-            "assets/misc/spinners.txt",
-            "assets/misc/appear.txt",
-            "assets/misc/click.txt",
-            "assets/misc/coin.txt",
-            "assets/misc/enter.txt",
-            "assets/misc/hit.txt",
-            "assets/misc/ouch.txt",
-            "assets/misc/wink.txt"
-        ];
-        
-        for (let i = 0; i < files.length; i++) {
-            const response = await fetch(files[i]);
-            
-            if (!response.ok) {
-              throw new Error(`Error: ${response.status}`);
-            }
-        
-            files[i] = await response.text(); 
-        }
-        
-        gameMusic = new Audio(`data:audio/ogg;base64,${files[0]}`);
-        gameMusic.preload = true;
-        gameMusic.loop = true;
-        gameMusic.volume = 0.2;
-        soundEffects = {
-            appear: new Audio(`data:audio/ogg;base64,${files[1]}`),
-            click: new Audio(`data:audio/ogg;base64,${files[2]}`),
-            coin: new Audio(`data:audio/ogg;base64,${files[3]}`),
-            enter: new Audio(`data:audio/ogg;base64,${files[4]}`),
-            hit: new Audio(`data:audio/ogg;base64,${files[5]}`),
-            ouch: new Audio(`data:audio/ogg;base64,${files[6]}`),
-            wink: new Audio(`data:audio/ogg;base64,${files[7]}`)
-        };
     } catch (error) {
         console.error("Levels not found");
     }
@@ -246,8 +206,9 @@ function setupMouse() {
     // eventually interacting with menu buttons.
     window.addEventListener('mousedown', function (e) {
         if (!refreshInterval) {
-            refreshInterval = setInterval(refreshSounds, 10000);
+            refreshInterval = setInterval(Audio.refreshSounds, 10000);
         }
+
         if (mouseTarget > -1) {
             // If interacting with the sound button, the setting must be immediately updated.
             if (gameState == "settings" && mouseTarget == 1) {
@@ -257,7 +218,7 @@ function setupMouse() {
                 }
                 gameSettings.sound = !gameSettings.sound;
             }
-            playSound("click", 0.4);
+            Audio.playSound("click", 0.4);
 
             animTarget = mouseTarget;
             mouseTarget = -2;
@@ -321,30 +282,6 @@ function setupKeys() {
     window.addEventListener("blur", () => {
         gameArea.keys = [0, 0, 0, 0];
     });
-}
-
-// Plays sound, looking up string in soundEffects and setting volume.
-function playSound(key, volume=1, interruptable=true) {
-    if (!gameSettings.allAudio || !gameSettings.sound) volume = 0;
-    try {
-        const soundCheck = soundEffects[key];
-        if (interruptable || (soundCheck.paused || soundCheck.ended || soundEffects[key].currentTime == 0)) {
-            soundEffects[key].currentTime = 0;
-            soundEffects[key].volume = volume;
-            soundEffects[key].play();
-        } else {
-            console.warn("Attempted to interrupt " + key);
-        }
-    } catch (error) {
-        console.error("Sound not found");
-    }
-}
-
-// Plays all sounds at 0 volume to keep them loaded and ensure reduced latency from loading time.
-function refreshSounds() {
-    const soundList = ["appear", "click", "coin", "enter", "hit", "ouch", "wink"];
-    soundList.forEach((key) => {playSound(key, 0, false)});
-    console.log("Sounds refreshed");
 }
 
 // Creates a player component, with circle and additional features such as movement and animation.
@@ -475,7 +412,7 @@ function goal(x=0, y=0) {
             if (this.goalScale == 0.001) {
                 this.animating = true;
                 this.animStart = timer;
-                playSound("appear", 0.5);
+                Audio.playSound("appear", 0.5);
             }
             if (this.animating && (timer - this.animStart) < 0.789) {
                 const t = timer - this.animStart;
@@ -712,7 +649,7 @@ function coin(x=0, y=0) {
             coinCount--;
             this.animating = true;
             this.animStart = timer;
-            playSound("coin", 0.3);
+            Audio.playSound("coin", 0.3);
         }
 
         // Animate a coin disappearing as it is collected.
@@ -804,7 +741,7 @@ function singleButtonScreen() {
             // Start music and switch to main menu.
             BGShapes = [];
             if (gameState == "none") {
-                gameMusic.play();
+                Audio.gameMusic.play();
                 setupMainMenu(true);
             }
             else if (currentLevel == -1) setupSettings(true);
@@ -1016,7 +953,7 @@ function setupCompletion() {
 
     // Setup BG shapes and restart music; it is stopped before loading this screen.
     setupBGShapes();
-    gameMusic.play();
+    Audio.gameMusic.play();
 
     // Setup menu button.
     menuUI = [
@@ -1039,7 +976,7 @@ export function updateGameArea() {
     gameArea.clear();
     gameArea.scaleCanvas();
     timer = Date.now() / 1000 - timerStart;
-    if (gameMusic) gameMusic.volume = (!gameSettings.allAudio || !gameSettings.music) ? 0 : 0.2;
+    if (Audio.gameMusic) Audio.gameMusic.volume = (!gameSettings.allAudio || !gameSettings.music) ? 0 : 0.2;
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
@@ -1191,8 +1128,8 @@ function levelLogic() {
         mouseTarget = animTarget = -2;
         levelState = "complete";
         animStartTime = timer;
-        playSound("enter");
-        setTimeout(playSound, 250, "wink");
+        Audio.playSound("enter");
+        setTimeout(Audio.playSound, 250, "wink");
     }
 
     // If player is no longer alive, the level is failed.
@@ -1201,8 +1138,8 @@ function levelLogic() {
         mouseTarget = animTarget = -2;
         levelState = "failed";
         animStartTime = timer;
-        playSound("hit");
-        playSound("ouch");
+        Audio.playSound("hit");
+        Audio.playSound("ouch");
     }
 
     // When the level is over, an animation is played before the level is either reloaded
@@ -1212,8 +1149,8 @@ function levelLogic() {
             if (currentLevel == -1 || currentLevel == lastLevel) {
                 // For the "reset data" level or last level, remove button and stop music.
                 menuUI[0] = [new circ(0)];
-                gameMusic.pause();
-                gameMusic.currentTime = 0;
+                Audio.gameMusic.pause();
+                Audio.gameMusic.currentTime = 0;
             }
             // If applicable, save score, or update if it's higher.
             if (currentLevel != -1 && (!highScore || Number(highScore) < score)) {
