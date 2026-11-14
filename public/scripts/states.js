@@ -10,7 +10,7 @@ export const State = {
         shapes: true,
         fades: true
     },
-    currentLevel: 0, lastLevel: 26
+    currentLevel: 0, lastLevel: 20
 };
 
 State.mainPlayer = new player();
@@ -29,6 +29,7 @@ export const Timer = {
 
 /** @type {any} */
 export let Shapes = {
+    mainColor: "red",
     safeArea: [],
     obstacles: [],
     BGShapes: [],

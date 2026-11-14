@@ -292,7 +292,7 @@ export function loseAnim() {
         if (Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart === 0) {
             Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = Timer.time;
             Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.25 : 0;
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = "red";
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = Shapes.mainColor;
         }
         State.mainPlayer.playerScale = 0;
         return elapsedTime >= (State.gameSettings.fades ? 0.75 : 0.5);

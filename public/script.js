@@ -1,4 +1,3 @@
-// Note: The top-left corner in the preferred coordinate system is (-480, 360).
 "use strict";
 
 // Import variables and functions from JS files; a lot.
@@ -10,56 +9,49 @@ import { State, Timer, Shapes } from './scripts/states.js';
 import { player, goal, coin, winAnim, loseAnim } from './scripts/entities.js';
 
 // Fetch levels and audio.
-let levels = {};
-fetchLevels();
+let levels = await fetchLevels();
 Audio.fetchAudio();
-
-// Setup fonts to be used in-game.
-new FontFace("Francois One", 'url(assets/fonts/FrancoisOne.ttf)').load().then((font) => {document.fonts.add(font)});
-new FontFace("Paytone One", 'url(assets/fonts/PaytoneOne.ttf)').load().then((font) => {document.fonts.add(font)});
 
 // Retrieve save data from local storage if available.
 State.maxLevel = Number(localStorage.getItem("maxLevel"));
 if (Number.isNaN(State.maxLevel) || State.maxLevel < 1 || State.maxLevel > State.lastLevel + 1) State.maxLevel = 1;
-
-// Retrieve settings data.
 ["music", "sound", "shapes", "fades"].forEach(setting => {
-    if (localStorage.getItem(setting))
-        State.gameSettings[setting] = localStorage.getItem(setting) === "true";
+    if (localStorage.getItem(setting)) State.gameSettings[setting] = localStorage.getItem(setting) === "true";
 });
 
 startGame(true);
 
 // Starts game by setting up shapes, play button, and game area.
 function startGame(firstLoad) {
-    State.gameState = "none";
-    State.levelState = "none";
-    Timer.start = Date.now() / 1000, Timer.time = 0;
+    State.gameState = "none", State.levelState = "none";
+    Timer.reset;
     Menus.clearTargets();
     Menus.setupBGShapes(true);
 
     Shapes.FGShapes = [new rect(960, 720, 0, 0, 0, 0, "black")];
     Shapes.FGShapes[0].transition = true;
-
     Shapes.menuUI = [new Menus.button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
     if (firstLoad) {
         setupMouse();
         setupKeys();
         gameArea.start();
+        gameArea.canvas.style["transition"] = `border-color ${Number(State.gameSettings.fades) / 4}s`;
     }
+
+    gameArea.canvas.style["border-color"] = "#800"; 
 }
 
-// Sets levels to levels.json.
+// Returns levels.json.
 export async function fetchLevels() {
     try {
-        levels = await fetch("assets/levels.json").then((lv) => {return lv.json();});
+        return await fetch("assets/levels.json").then((lv) => lv.json());
     } catch (error) {
-        console.error("Levels not found");
+        return console.error("Levels not found");
     }
 }
 
-// Loads objects and sets variables required for playing through a new level.
+// Loads objects and sets everything required for playing through a new level.
 function loadLevel(level, firstLoad) {
     // Setup timer and states unless level is null.
     if (level != null) {
@@ -109,10 +101,12 @@ function loadLevel(level, firstLoad) {
             const { string, x, y, size = 36, color = "black", align = "center" } = obj;
             return new text(string, x, y, size, color, align);
         });
-
         Shapes.FGShapes = [levelTitle, ...levelText, flash];
 
-        const redBG = Object.assign(new rect(960, 720), { main: true });
+        Shapes.mainColor = "red";
+        gameArea.canvas.style["border-color"] = `color-mix(in srgb, ${Shapes.mainColor}, black)`;
+
+        const mainBG = Object.assign(new rect(960, 720), { color: Shapes.mainColor, main: true });
         const BGSquares = Array.from({ length: 16 }, (_, i) => {
             const size = 60 + Math.random() * 400;
             const speed = (Math.random() + 0.5) * (Math.round(Math.random()) - 0.5);
@@ -121,27 +115,27 @@ function loadLevel(level, firstLoad) {
             const angle = Math.random() * 360;
             const alpha = Math.ceil(Math.random() * 3) / 32;
 
-            return new rect(size, size, speed, x, y, angle, `rgba(255, 0, 0, ${alpha})`);
+            return new rect(size, size, speed, x, y, angle, `rgb(from ${Shapes.mainColor} r g b / ${alpha * 100}%)`);
         });
 
-        Shapes.BGShapes = [redBG, ...BGSquares];
+        Shapes.BGShapes = [mainBG, ...BGSquares];
 
         // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
 
-        const shapeSetter = function(obj, mainColor) {
+        const shapeSetter = function(obj, col) {
             if (obj.type === "rect") {
-                const { width = 100, height = 100, speed = 0, x = 0, y = 0, angle = 0, color = mainColor,
+                const { width = 100, height = 100, speed = 0, x = 0, y = 0, angle = 0, color = col,
                     offset: { x: offsetX = 0, y: offsetY = 0 } = {}, range = 0, time = 1, delay = 0 } = obj;
                 return new rect(width, height, speed, x, y, angle, color,
                     offsetX, offsetY, range, time, delay);
             } else {
-                const { radius = 100, x = 0, y = 0, color = mainColor } = obj;
+                const { radius = 100, x = 0, y = 0, color = col } = obj;
                 return new circ(radius, x, y, color);
             }
         };
 
         Shapes.safeArea = (loadedLevel.safeArea ?? []).map((obj) => shapeSetter(obj, "black"));
-        Shapes.obstacles = (loadedLevel.obstacles ?? []).map((obj) => shapeSetter(obj, "red"));
+        Shapes.obstacles = (loadedLevel.obstacles ?? []).map((obj) => shapeSetter(obj, Shapes.mainColor));
 
         // Coins are stored similarly, but with less customization.
 
@@ -186,7 +180,14 @@ export function updateGameArea() {
                 ctx.globalAlpha = (element.animStart === 0) ? 1 - elapsedAmount : elapsedAmount;
                 element.update();
                 ctx.globalAlpha = 1;
+
+                if (State.gameSettings.fades) gameArea.canvas.style["transition"] = `border-color ${element.duration * 2}s`;
+                gameArea.canvas.style["border-color"] = (element.animStart === 0) ?
+                    `color-mix(in srgb, ${Shapes.mainColor}, black)` : element.color;
             }
+
+            gameArea.canvas.style["border-color"] = (element.animStart === 0) ?
+                `color-mix(in srgb, ${Shapes.mainColor}, black)` : element.color;
         }
     });
 
@@ -424,7 +425,10 @@ function levelLogic() {
             }
             break;
         case "failed":
-            if (loseAnim()) loadLevel("Level " + State.currentLevel, false);
+            if (loseAnim()) {
+                const levelString = (State.currentLevel === -1) ? "Reset Data" : "Level " + State.currentLevel;
+                loadLevel(levelString, false)
+            };
             break;
         default:
             if (State.currentLevel !== -1) {

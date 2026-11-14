@@ -1,0 +1,31 @@
+@font-face {
+    font-family: "Francois One";
+    src: url("assets/fonts/FrancoisOne.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Paytone One";
+    src: url("assets/fonts/PaytoneOne.ttf") format("truetype");
+}
+
+body {
+    margin: 0 auto;
+    background-color: black;
+}
+
+canvas {
+    aspect-ratio: 4 / 3;
+    border: 6px dashed;
+    border-color: black;
+    background-color: black;
+    width: stretch;
+    height: auto;
+    transition: border-color 1s;
+}
+
+@media (min-aspect-ratio: 4/3) {
+    canvas {
+        width: auto;
+        height: stretch;
+    }
+}

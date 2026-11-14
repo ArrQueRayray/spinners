@@ -1,3 +1,4 @@
+import { gameArea } from './canvas.js';
 import { mouseCoords } from './canvas.js';
 import { rect, text, inShape } from './utils.js';
 import * as Audio from './audio.js';
@@ -122,6 +123,7 @@ export function button(x=0, y=0, shape, text, id, squareSize) {
                 break;
             case 3:
                 State.gameSettings.fades = !State.gameSettings.fades;
+                gameArea.canvas.style["transition"] = `border-color ${Number(State.gameSettings.fades)}s`;
                 localStorage.setItem("fades", String(State.gameSettings.fades));
                 updateSettings(State.gameSettings.fades, 3);
                 break;  
@@ -259,13 +261,18 @@ export function setupFGShapes() {
     ];
 }
 
+function resetVars() {
+    blockTargets();
+    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
+    Shapes.mainColor = "red";
+    Timer.reset();
+}
+
 // Loads in the main menu.
 export function setupMainMenu(notLoaded) {
     // Reset button-related variables and Timer.time.
     mainMenuVisited = true;
-    mouseTarget = animTarget = -2;
-    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
-    Timer.reset();
+    resetVars();
 
     // Setup background shapes if not loaded.
     if (notLoaded) setupBGShapes(false);
@@ -287,20 +294,18 @@ export function setupMainMenu(notLoaded) {
 
 // Loads in the level select.
 export function setupLevelSelect(notLoaded) {
+    // Reset button-related variables and Timer.time.
+    State.levelState = "none";
+    resetVars();
+
+    // Setup background shapes if not loaded.
+    if (notLoaded) setupBGShapes(false);
+
     // Calculate total score.
     let totalScore = 0;
     for (let i = 1; i <= State.lastLevel; i++) {
         totalScore += Number(localStorage.getItem("score" + i));
     }
-
-    // Reset button-related variables and Timer.time.
-    State.levelState = "none";
-    mouseTarget = animTarget = -2;
-    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
-    Timer.reset();
-
-    // Setup background shapes if not loaded.
-    if (notLoaded) setupBGShapes(false);
 
     // Setup menu UI.
     Shapes.menuUI = new Array(35);
@@ -335,9 +340,7 @@ export function setupLevelSelect(notLoaded) {
 // Loads in the settings menu.
 export function setupSettings(notLoaded) {
     // Reset button-related variables and Timer.time.
-    mouseTarget = animTarget = -2;
-    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
-    Timer.reset();
+    resetVars();
 
     // Setup background shapes if not loaded.
     if (notLoaded) setupBGShapes(false);
@@ -409,9 +412,7 @@ export function updateMute() {
 // Loads in the credits screen.
 export function setupCredits() {
     // Reset button-related variables and Timer.time.
-    mouseTarget = animTarget = -2;
-    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
-    Timer.reset();
+    resetVars();
 
     // Setup menu button.
     Shapes.menuUI = [
@@ -434,9 +435,7 @@ export function setupCredits() {
 export function setupCompletion() {
     // Reset button-related variables and Timer.time.
     State.levelState = "none";
-    mouseTarget = animTarget = -2;
-    setTimeout(clearTargets, State.gameSettings.fades ? 250 : 0);
-    Timer.reset();
+    resetVars();
 
     // Setup BG shapes and restart music; it is stopped before loading this screen.
     setupBGShapes(false);

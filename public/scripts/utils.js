@@ -2,6 +2,7 @@ import { ctx } from './canvas.js';
 import { Timer } from './states.js';
 
 // Creates a rectangle component with x and y referring to center in preferred coordinate system.
+// Note: The top-left corner in the preferred coordinate system is (-480, 360).
 export function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red", offsetX=0, offsetY=0, range=0, time=2, delay=0) {
     this.shape = "rect";
     this.width = width;

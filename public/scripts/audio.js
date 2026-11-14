@@ -2,7 +2,8 @@ import { State } from './states.js';
 
 export let gameMusic;
 // Sets up files to fetch from.
-let audioList = ["spinners", "appear", "click", "coin", "enter", "hit", "ouch", "wink"], soundEffects = {}; 
+let musicList = ["spinners"], soundList = ["appear", "click", "coin", "enter", "hit", "ouch", "wink"];
+let audioList = [...musicList, ...soundList], soundEffects = {}; 
 
 // Fetches audio files to allow them to encode.
 export async function fetchAudio() {
@@ -22,7 +23,7 @@ export async function fetchAudio() {
         gameMusic.preload = true;
         gameMusic.loop = true;
         gameMusic.volume = 0.2;
-        for (let i = 1; i < audioList.length; i++) {
+        for (let i = musicList.length; i < audioList.length; i++) {
             soundEffects[audioList[i]] = new Audio(`data:audio/ogg;base64,${audioData[i]}`)
         }
         
@@ -50,5 +51,5 @@ export function playSound(key, volume=1, interruptable=true) {
 
 // Plays all audio at 0 volume to keep them loaded and ensure reduced latency from loading time.
 export function refreshSounds() {
-    audioList.forEach((key) => playSound(key, 0, false));
+    soundList.forEach((key) => playSound(key, 0, false));
 }
