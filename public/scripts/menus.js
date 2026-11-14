@@ -1,12 +1,9 @@
-import { gameArea } from './canvas.js';
+import { mouseCoords } from './canvas.js';
 import { rect, text, inShape } from './utils.js';
 import * as Audio from './audio.js';
-import { State } from './states.js';
-import { Timer } from './timer.js';
-import { Shapes } from './entities.js';
+import { State, Timer, Shapes } from './states.js';
 
 export let mouseTarget, animTarget, mainMenuVisited = false;
-let mouseCoords = {x: 999, y: 999}, refreshInterval;
 
 // Creates a button component, with a given shape, clickable interactivity, and animation.
 export function button(x=0, y=0, shape, text, id, squareSize) {
@@ -187,39 +184,10 @@ export function button(x=0, y=0, shape, text, id, squareSize) {
     }
 }
 
-// Setup mouse control functionality for clicking on buttons.
-export function setupMouse() {
-    // The mouse is used to guarantee focus on the window, allowing for sound playback, and
-    // eventually interacting with menu buttons.
-    window.addEventListener('mousedown', function (e) {
-        if (!refreshInterval) {
-            refreshInterval = setInterval(Audio.refreshSounds, 10000);
-        }
-
-        if (mouseTarget > -1) {
-            // If interacting with the sound button, the setting must be immediately updated.
-            if (State.gameState == "settings" && mouseTarget == 1) {
-                if (!State.gameSettings.allAudio) {
-                    State.gameSettings.allAudio = true;
-                    State.gameSettings.music = false;
-                }
-                State.gameSettings.sound = !State.gameSettings.sound;
-            }
-            Audio.playSound("click", 0.4);
-
-            animTarget = mouseTarget;
-            mouseTarget = -2;
-            Shapes.menuUI[animTarget].animStart = Timer.time;
-            Shapes.menuUI[animTarget].animate(0.25);
-        }
-    });
-
-    // The coordinates are constantly updated.
-    gameArea.canvas.addEventListener("pointermove", (e) => {
-        const bounds = gameArea.canvas.getBoundingClientRect();
-        mouseCoords =  {x: ((e.clientX - bounds.left) * 960) / bounds.width - 480,
-                        y: 360 - ((e.clientY - bounds.top) * 960) / bounds.width};
-    });
+// Sets a target to animate while blocking mouse target.
+export function setTargets(target) {
+    animTarget = target;
+    mouseTarget = -2;
 }
 
 // Disables buttons by blocking targets.
@@ -246,23 +214,35 @@ export function animateFG(animStart, duration) {
 }
 
 // Setup BG shapes for menu screens.
-export function setupBGShapes() {
+export function setupBGShapes(centerFocus) {
+    let s1, s2, a, x1, x2, x3, y1, y2, y3;
+    if (centerFocus) {
+        s1 = 480, s2 = 300, a = 0.50;
+        x1 = 440, x2 = 480, x3 = 160;
+        y1 = 320, y2 = 360, y3 = 160;
+    } else {
+        s1 = 300, s2 = 180, a = 0.25;
+        x1 = 480, x2 = 520, x3 = 240;
+        y1 = 360, y2 = 400, y3 = 120;
+    }
+
     Shapes.BGShapes = [
-        new rect(300, 300, 0.5, -480, 360, Math.random() * 360),
-        new rect(300, 300, -0.5, 480, 360, Math.random() * 360),
-        new rect(300, 300, -0.5, -480, -360, Math.random() * 360),
-        new rect(300, 300, 0.5, 480, -360, Math.random() * 360),
-        new rect(180, 180, 0.5, -520, 120, Math.random() * 360),
-        new rect(180, 180, -0.5, 520, 120, Math.random() * 360),
-        new rect(180, 180, -0.5, 240, 400, Math.random() * 360),
-        new rect(180, 180, 0.5, 240, -400, Math.random() * 360),
-        new rect(180, 180, -0.5, -520, -120, Math.random() * 360),
-        new rect(180, 180, 0.5, 520, -120, Math.random() * 360),
-        new rect(180, 180, 0.5, -240, 400, Math.random() * 360),
-        new rect(180, 180, -0.5, -240, -400, Math.random() * 360)
+        new rect(s1, s1, 0.5, -x1, y1, Math.random() * 360),
+        new rect(s1, s1, -0.5, x1, y1, Math.random() * 360),
+        new rect(s1, s1, -0.5, -x1, -y1, Math.random() * 360),
+        new rect(s1, s1, 0.5, x1, -y1, Math.random() * 360),
+        new rect(s2, s2, 0.5, -x2, y3, Math.random() * 360),
+        new rect(s2, s2, -0.5, x2, y3, Math.random() * 360),
+        new rect(s2, s2, -0.5, x3, y2, Math.random() * 360),
+        new rect(s2, s2, 0.5, x3, -y2, Math.random() * 360),
+        new rect(s2, s2, -0.5, -x2, -y3, Math.random() * 360),
+        new rect(s2, s2, 0.5, x2, -y3, Math.random() * 360),
+        new rect(s2, s2, 0.5, -x3, y2, Math.random() * 360),
+        new rect(s2, s2, -0.5, -x3, -y2, Math.random() * 360)
     ];
+
     for (let i = 0; i < Shapes.BGShapes.length; i++) {
-        const alpha = (i < 4) ? 0.25 : 0.125;
+        const alpha = (i < 4) ? a : a / 2;
         Shapes.BGShapes[i].speed *= Math.random() + 0.5;
         Shapes.BGShapes[i].color = `rgba(255, 0, 0, ${alpha})`;
     }
@@ -288,7 +268,7 @@ export function setupMainMenu(notLoaded) {
     Timer.reset();
 
     // Setup background shapes if not loaded.
-    if (notLoaded) setupBGShapes();
+    if (notLoaded) setupBGShapes(false);
 
     // Setup menu UI.
     Shapes.menuUI = [
@@ -320,7 +300,7 @@ export function setupLevelSelect(notLoaded) {
     Timer.reset();
 
     // Setup background shapes if not loaded.
-    if (notLoaded) setupBGShapes();
+    if (notLoaded) setupBGShapes(false);
 
     // Setup menu UI.
     Shapes.menuUI = new Array(35);
@@ -360,7 +340,7 @@ export function setupSettings(notLoaded) {
     Timer.reset();
 
     // Setup background shapes if not loaded.
-    if (notLoaded) setupBGShapes();
+    if (notLoaded) setupBGShapes(false);
 
     // Setup menu buttons.
     Shapes.menuUI = [
@@ -459,7 +439,7 @@ export function setupCompletion() {
     Timer.reset();
 
     // Setup BG shapes and restart music; it is stopped before loading this screen.
-    setupBGShapes();
+    setupBGShapes(false);
     Audio.gameMusic.play();
 
     // Setup menu button.
