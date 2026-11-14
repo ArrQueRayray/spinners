@@ -83,17 +83,17 @@ export function setupKeys() {
                 return Menus.updateMute();
             case "Backquote":
                 // For ease of level creation, prints mouse coordinates and re-fetches levels.
-                console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
-                return fetchLevels();
+                // console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
+                // return fetchLevels();
             case "Backslash":
                 // For debugging purposes only, auto-completes the current level.
-                if (State.gameState === "level" && State.levelState === "none") {
-                    State.mainPlayer.circ.x = State.mainGoal.x;
-                    State.mainPlayer.circ.y = State.mainGoal.y;
-                    State.coins.forEach(coin => {
-                        coin.animate();
-                    });
-                }
+                // if (State.gameState === "level" && State.levelState === "none") {
+                //     State.mainPlayer.circ.x = State.mainGoal.x;
+                //     State.mainPlayer.circ.y = State.mainGoal.y;
+                //     State.coins.forEach(coin => {
+                //         coin.animate();
+                //     });
+                // }
                 return;
         }
     })
