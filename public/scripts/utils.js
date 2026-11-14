@@ -86,6 +86,7 @@ export function drawRect(x, y, width, height, angle = 0) {
 
 // Fills a circle based on preferred coordinate system.
 export function drawCirc(x, y, radius) {
+    radius = Math.abs(radius);
     ctx.beginPath();
     ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
     ctx.fill();

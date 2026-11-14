@@ -9,18 +9,14 @@ import * as Menus from './scripts/menus.js';
 import { State, Timer, Shapes } from './scripts/states.js';
 import { player, goal, coin } from './scripts/entities.js';
 
-// Declare and/or initialize context, shape arrays, and fetch levels.
-let levels = {}, loadedLevel;
+// Fetch levels and audio.
+let levels = {};
 fetchLevels();
-
-// Declare audio refresh interval and fetch audio.
 Audio.fetchAudio();
 
-// Declare and/or initialize other gameplay states and properties.
-
 // Setup fonts to be used in-game.
-new FontFace("Francois One", 'url(assets/misc/FrancoisOne.ttf)').load().then((font) => {document.fonts.add(font)});
-new FontFace("Paytone One", 'url(assets/misc/PaytoneOne.ttf)').load().then((font) => {document.fonts.add(font)});
+new FontFace("Francois One", 'url(assets/fonts/FrancoisOne.ttf)').load().then((font) => {document.fonts.add(font)});
+new FontFace("Paytone One", 'url(assets/fonts/PaytoneOne.ttf)').load().then((font) => {document.fonts.add(font)});
 
 // Retrieve save data from local storage if available.
 State.maxLevel = Number(localStorage.getItem("maxLevel"));
@@ -65,25 +61,28 @@ export async function fetchLevels() {
 
 // Loads objects and sets variables required for playing through a new level.
 function loadLevel(level, firstLoad) {
-    // Setup Timer.time and states.
-    Timer.reset();
-    State.gameState = "level", State.levelState = "none", State.score = 1000;
-    Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = 0;
-    Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.5 : 0;
-    Menus.blockTargets();
-    setTimeout(Menus.clearTargets, State.gameSettings.fades ? 500 : 0);
+    // Setup timer and states unless level is null.
+    if (level != null) {
+        State.gameState = "level", State.levelState = "none", State.score = 1000;
+        Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = 0;
+        Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.5 : 0;
 
-    // If a first level load, setup the menu button.
-    if (firstLoad) {
-        if (State.currentLevel == -1) Shapes.menuUI = [new Menus.button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
-        else {
-            Shapes.menuUI = [new Menus.button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80),
-                new Menus.button(-480, 360, new rect(245, 140), new text("Score: 999\nBest: N/A", 0.25, -1.4, 24), 1, 80)];
-            Shapes.menuUI[1].status = "white";
-            Shapes.menuUI[1].text.align = "left";
-            Shapes.menuUI[1].check();
+        Menus.blockTargets();
+        setTimeout(Menus.clearTargets, State.gameSettings.fades ? 500 : 0);
+        Timer.reset();
+
+        // If a first level load, setup the menu button.
+        if (firstLoad) {
+            if (State.currentLevel == -1) Shapes.menuUI = [new Menus.button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
+            else {
+                Shapes.menuUI = [new Menus.button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80),
+                    new Menus.button(-480, 360, new rect(245, 140), new text("Score: 999\nBest: N/A", 0.25, -1.4, 24), 1, 80)];
+                Shapes.menuUI[1].status = "white";
+                Shapes.menuUI[1].text.align = "left";
+                Shapes.menuUI[1].check();
+            }
+            Shapes.menuUI[0].status = "white";
         }
-        Shapes.menuUI[0].status = "white";
     }
 
     // Retrieve and update high State.score.
@@ -93,22 +92,19 @@ function loadLevel(level, firstLoad) {
     // Get desired level from levels.json if possible.
     try {
         // Load placeholder level in case level doesn't exist.
-        loadedLevel = {"name": "Oh noes!",
+        let loadedLevel = levels[level] ?? {"name": level == null ? "Oh noes! Invalid level!" : "Oh noes! Missing level!",
             "text": [{"x": 0, "y": 100, "string": "Error! Please contact ArrQue about this."}],
             "player": {"x": -240, "y": 0}, "goal": {"x": 240, "y": 0},
             "safeArea": [{"type": "rect", "x": 0, "y": 0, "width": 600, "height": 120}],
             "obstacles": [{"type": "rect", "x": 0, "y": 0, "width": 122, "height": 24, "speed": 24}]};
-
-        if (Object.hasOwn(levels, level)) {
-            loadedLevel = levels[level];
-        }
 
         // Scale determines player and goal size.
         State.gameScale = loadedLevel.scale ?? 1;
 
         // All planned levels have a solid red background, and some may have text which goes on the foreground.
         const flash = Shapes.FGShapes[Shapes.FGShapes.length - 1];
-        const levelTitle = new text(`${level}: ${loadedLevel.name}`, -475, -345, 24, "black", "left");
+        const levelString = level != null ? `${level}: ${loadedLevel.name}` : loadedLevel.name;
+        const levelTitle = new text(levelString, -475, -345, 24, "black", "left");
         const levelText = (loadedLevel.text ?? []).map((obj) => {
             const { string, x, y, size = 36, color = "black", align = "center" } = obj;
             return new text(string, x, y, size, color, align);
@@ -158,6 +154,7 @@ function loadLevel(level, firstLoad) {
 
     } catch (error) {
         console.error("JSON parsing error: " + error);
+        loadLevel(null, firstLoad);
     }
 }
 

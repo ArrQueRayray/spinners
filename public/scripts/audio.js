@@ -1,48 +1,33 @@
 import { State } from './states.js';
 
 export let gameMusic;
-let soundEffects; 
+// Sets up files to fetch from.
+let audioList = ["spinners", "appear", "click", "coin", "enter", "hit", "ouch", "wink"], soundEffects = {}; 
 
 // Fetches audio files to allow them to encode.
 export async function fetchAudio() {
     try {
-        // Sets up text files to fetch from.
-        let files = [
-            "assets/misc/spinners.txt",
-            "assets/misc/appear.txt",
-            "assets/misc/click.txt",
-            "assets/misc/coin.txt",
-            "assets/misc/enter.txt",
-            "assets/misc/hit.txt",
-            "assets/misc/ouch.txt",
-            "assets/misc/wink.txt"
-        ];
-        
-        for (let i = 0; i < files.length; i++) {
-            const response = await fetch(files[i]);
+        let audioData = [];
+        for (let i = 0; i < audioList.length; i++) {
+            const response = await fetch(`assets/audio/${audioList[i]}.txt`);
             
             if (!response.ok) {
               throw new Error(`Error: ${response.status}`);
             }
         
-            files[i] = await response.text(); 
+            audioData.push(await response.text()); 
         }
         
-        gameMusic = new Audio(`data:audio/ogg;base64,${files[0]}`);
+        gameMusic = new Audio(`data:audio/ogg;base64,${audioData[0]}`);
         gameMusic.preload = true;
         gameMusic.loop = true;
         gameMusic.volume = 0.2;
-        soundEffects = {
-            appear: new Audio(`data:audio/ogg;base64,${files[1]}`),
-            click: new Audio(`data:audio/ogg;base64,${files[2]}`),
-            coin: new Audio(`data:audio/ogg;base64,${files[3]}`),
-            enter: new Audio(`data:audio/ogg;base64,${files[4]}`),
-            hit: new Audio(`data:audio/ogg;base64,${files[5]}`),
-            ouch: new Audio(`data:audio/ogg;base64,${files[6]}`),
-            wink: new Audio(`data:audio/ogg;base64,${files[7]}`)
-        };
+        for (let i = 1; i < audioList.length; i++) {
+            soundEffects[audioList[i]] = new Audio(`data:audio/ogg;base64,${audioData[i]}`)
+        }
+        
     } catch (error) {
-        console.error("Levels not found");
+        console.error("Audio not found");
     }
 }
 
@@ -63,8 +48,7 @@ export function playSound(key, volume=1, interruptable=true) {
     }
 }
 
-// Plays all sounds at 0 volume to keep them loaded and ensure reduced latency from loading time.
+// Plays all audio at 0 volume to keep them loaded and ensure reduced latency from loading time.
 export function refreshSounds() {
-    const soundList = ["appear", "click", "coin", "enter", "hit", "ouch", "wink"];
-    soundList.forEach((key) => playSound(key, 0, false));
+    audioList.forEach((key) => playSound(key, 0, false));
 }
