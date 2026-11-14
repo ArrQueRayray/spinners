@@ -1,4 +1,4 @@
-import { gameSettings } from "../script.js";
+import { State } from './states.js';
 
 export let gameMusic;
 let soundEffects; 
@@ -48,7 +48,7 @@ export async function fetchAudio() {
 
 // Plays sound, looking up string in soundEffects and setting volume.
 export function playSound(key, volume=1, interruptable=true) {
-    if (!gameSettings.allAudio || !gameSettings.sound) volume = 0;
+    if (!State.gameSettings.allAudio || !State.gameSettings.sound) volume = 0;
     try {
         const soundCheck = soundEffects[key];
         if (interruptable || (soundCheck.paused || soundCheck.ended || soundEffects[key].currentTime == 0)) {
