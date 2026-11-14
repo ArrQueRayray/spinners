@@ -2426,6 +2426,65 @@
             {"x": -375, "y": -250}
         ]
     },
+    "Level 26": {
+        "name": "Legacy",
+        "scale": 1.5,
+        "player": {"x": 0, "y": -260},
+        "goal": {"x": 0, "y": 260},
+        "safeArea": [
+            {
+                "type": "circ",
+                "x": 0, "y": 0,
+                "radius": 220
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 140, "height": 624
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 832, "height": 100
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 165,
+                "width": 832, "height": 100
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": -165,
+                "width": 832, "height": 100
+            }
+        ],
+        "obstacles": [
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 420, "height": 24, 
+                "speed": -0.75, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 420, "height": 24, 
+                "speed": 1.5, "angle": 0
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 420, "height": 24, 
+                "speed": 0.75, "angle": 90
+            },
+            {
+                "type": "rect", 
+                "x": 0, "y": 0,
+                "width": 420, "height": 24, 
+                "speed": -1.5, "angle": 90
+            }
+        ]
+    },
     "Reset Data": {
         "name": "Are you sure?",
         "text": [

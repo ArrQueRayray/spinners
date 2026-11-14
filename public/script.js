@@ -1,28 +1,30 @@
 // I'm much more used to working with a coordinate system where the middle of the canvas is the origin. For all
 // intents and purposes, the top-left corner in all user-defined functions is (-480, 360) rather than (0, 0).
 "use strict";
+import { gameArea, ctx } from './scripts/canvas.js';
+import { rect, circ, text, drawRect, drawCirc, inShape } from './scripts/utils.js';
 
 // Declare and/or initialize context, shape arrays, and levels and mouse coordinates objects.
-var ctx, BGShapes = [], FGShapes = [], menuUI = [];
-var mainPlayer, mainGoal, safeArea, obstacles, coins;
-var levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
-var currentLevel = 0, maxLevel = 1, lastLevel = 20;
+let BGShapes = [], FGShapes = [], menuUI = [];
+let mainPlayer, mainGoal, safeArea, obstacles, coins;
+let levels = {}, loadedLevel, mouseCoords = {x: -999, y: -999};
+let currentLevel = 0, lastLevel = 26;
 fetchLevels();
 
 // Declare and/or initialize audio-related components.
-var gameMusic, soundEffects, refreshInterval;  
+let gameMusic, soundEffects, refreshInterval;  
 fetchAudio();
 
 // Declare and/or initialize other gameplay states and properties.
-var mainMenuVisited = false;
-var gameSettings = {
+let mainMenuVisited = false;
+let gameSettings = {
     music: true,
     sound: true,
     allAudio: true,
     shapes: true,
     fades: true
 };
-var mouseTarget, animTarget;
+let mouseTarget, animTarget;
 let gameState, levelState, score, highScore, coinCount = 0;
 let timerStart = Date.now() / 1000, timer = 0, animStartTime = 0;
 let hDist, hDiag, gameScale;
@@ -34,11 +36,14 @@ mainFont.load().then((font) => {document.fonts.add(font)});
 logoFont.load().then((font) => {document.fonts.add(font)});
 
 // Retrieve save data from local storage if available.
-if (localStorage.getItem("maxLevel")) maxLevel = Number(localStorage.getItem("maxLevel"));
-if (localStorage.getItem("music")) gameSettings.music = localStorage.getItem("music") == "true";
-if (localStorage.getItem("sound")) gameSettings.sound = localStorage.getItem("sound") == "true";
-if (localStorage.getItem("shapes")) gameSettings.shapes = localStorage.getItem("shapes") == "true";
-if (localStorage.getItem("fades")) gameSettings.fades = localStorage.getItem("fades") == "true";
+let maxLevel = Number(localStorage.getItem("maxLevel"));
+if (Number.isNaN(maxLevel) || maxLevel < 1 || maxLevel > lastLevel + 1) maxLevel = 1;
+["music", "sound", "shapes", "fades"].forEach(setting => {
+    if (localStorage.getItem(setting))
+        gameSettings[setting] = localStorage.getItem(setting) == "true";
+});
+
+startGame(true);
 
 // Starts game by setting up shapes, play button, and game area.
 function startGame(firstLoad) {
@@ -72,7 +77,11 @@ function startGame(firstLoad) {
 
     menuUI = [new button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
-    if (firstLoad) gameArea.start();
+    if (firstLoad) {
+        setupMouse();
+        setupKeys();
+        gameArea.start();
+    }
 }
 
 // Sets levels to levels.json.
@@ -231,112 +240,87 @@ function loadLevel(level, firstLoad) {
     }
 }
 
-// Setup game area and canvas scaling, alongside mouse and keyboard controls.
-var gameArea = {
-    canvas: document.createElement("canvas"),
-    start: function() {
-        this.canvas.width = 960;
-        this.canvas.height = 720;
-        this.canvas.style = "position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px; margin: auto;";
-        ctx = this.canvas.getContext("2d");
-        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-
-        this.scaleCanvas();
-        this.setupMouse();
-        this.setupKeys();
-        
-        this.interval = setInterval(updateGameArea, 16.6667);
-    },
-    scaleCanvas: function() {
-        const scale = Math.min(Math.max(this.canvas.getBoundingClientRect().height / 720 * 1.5, 1), 2);
-        if (this.canvas.width !== 960 * scale || this.canvas.height !== 720 * scale) {
-            this.canvas.width = 960 * scale;
-            this.canvas.height = 720 * scale;
-            ctx.scale(scale, scale);
+// Setup mouse control functionality for clicking on buttons.
+function setupMouse() {
+    // The mouse is used to guarantee focus on the window, allowing for sound playback, and
+    // eventually interacting with menu buttons.
+    window.addEventListener('mousedown', function (e) {
+        if (!refreshInterval) {
+            refreshInterval = setInterval(refreshSounds, 10000);
         }
-    },
-    setupMouse: function() {
-        // The mouse is used to guarantee focus on the window, allowing for sound playback, and
-        // eventually interacting with menu buttons.
-        window.addEventListener('mousedown', function (e) {
-            if (!refreshInterval) {
-                refreshInterval = setInterval(refreshSounds, 10000);
-            }
-            if (mouseTarget > -1) {
-                // If interacting with the sound button, the setting must be immediately updated.
-                if (gameState == "settings" && mouseTarget == 1) {
-                    if (!gameSettings.allAudio) {
-                        gameSettings.allAudio = true;
-                        gameSettings.music = false;
-                    }
-                    gameSettings.sound = !gameSettings.sound;
+        if (mouseTarget > -1) {
+            // If interacting with the sound button, the setting must be immediately updated.
+            if (gameState == "settings" && mouseTarget == 1) {
+                if (!gameSettings.allAudio) {
+                    gameSettings.allAudio = true;
+                    gameSettings.music = false;
                 }
-                playSound("click", 0.4);
-
-                animTarget = mouseTarget;
-                mouseTarget = -2;
-                menuUI[animTarget].animStart = timer;
-                menuUI[animTarget].animate(0.25);
+                gameSettings.sound = !gameSettings.sound;
             }
-        });
+            playSound("click", 0.4);
 
-        // The coordinates are constantly updated.
-        this.canvas.addEventListener("pointermove", (e) => {
-            const bounds = this.canvas.getBoundingClientRect();
-            mouseCoords =  {x: ((e.clientX - bounds.left) * 960) / bounds.width - 480,
-                            y: 360 - ((e.clientY - bounds.top) * 960) / bounds.width};
-        });
-    },
-    setupKeys: function() {
-        // An integer array is used for checking key presses to allow for WASD or arrow keys. Key
-        // codes are used in case someone uses a different keyboard layout (i.e. ZQSD can work for
-        // someone with an AZERTY keyboard layout).
+            animTarget = mouseTarget;
+            mouseTarget = -2;
+            menuUI[animTarget].animStart = timer;
+            menuUI[animTarget].animate(0.25);
+        }
+    });
+
+    // The coordinates are constantly updated.
+    gameArea.canvas.addEventListener("pointermove", (e) => {
+        const bounds = gameArea.canvas.getBoundingClientRect();
+        mouseCoords =  {x: ((e.clientX - bounds.left) * 960) / bounds.width - 480,
+                        y: 360 - ((e.clientY - bounds.top) * 960) / bounds.width};
+    });
+}
+
+// Setup keyboard control functionality for moving player alongside other tasks.
+function setupKeys() {
+    // An integer array is used for checking key presses to allow for WASD or arrow keys. Key
+    // codes are used in case someone uses a different keyboard layout (i.e. ZQSD can work for
+    // someone with an AZERTY keyboard layout).
+    gameArea.keys = [0, 0, 0, 0];
+    window.addEventListener('keydown', function (e) {
+        if (e.repeat) return;
+        switch (e.code) {
+            case "KeyW": case "ArrowUp": return gameArea.keys[0]++;
+            case "KeyA": case "ArrowLeft": return gameArea.keys[1]++;
+            case "KeyS": case "ArrowDown": return gameArea.keys[2]++;
+            case "KeyD": case "ArrowRight": return gameArea.keys[3]++;
+            case "KeyM":
+                gameSettings.allAudio = !gameSettings.allAudio;
+                return updateMute();
+            case "Backquote":
+                // For ease of level creation, prints mouse coordinates and re-fetches levels.
+                /*
+                console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
+                return fetchLevels();
+                */
+            case "Backslash":
+                // For debugging purposes only, auto-completes the current level.
+                /*
+                if (gameState == "level" && levelState == "none") {
+                    mainPlayer.circ.x = mainGoal.x;
+                    mainPlayer.circ.y = mainGoal.y;
+                    coins.forEach(coin => {
+                        coin.animate();
+                    });
+                }
+                */
+                return;
+        }
+    })
+    window.addEventListener('keyup', function (e) {
+        switch (e.code) {
+            case "KeyW": case "ArrowUp": return gameArea.keys[0]--;
+            case "KeyA": case "ArrowLeft": return gameArea.keys[1]--;
+            case "KeyS": case "ArrowDown": return gameArea.keys[2]--;
+            case "KeyD": case "ArrowRight": return gameArea.keys[3]--;
+        }
+    })
+    window.addEventListener("blur", () => {
         gameArea.keys = [0, 0, 0, 0];
-        window.addEventListener('keydown', function (e) {
-            if (e.repeat) return;
-            switch (e.code) {
-                case "KeyW": case "ArrowUp": return gameArea.keys[0]++;
-                case "KeyA": case "ArrowLeft": return gameArea.keys[1]++;
-                case "KeyS": case "ArrowDown": return gameArea.keys[2]++;
-                case "KeyD": case "ArrowRight": return gameArea.keys[3]++;
-                case "KeyM":
-                    gameSettings.allAudio = !gameSettings.allAudio;
-                    return updateMute();
-                case "Backquote":
-                    // For ease of level creation, prints mouse coordinates and re-fetches levels.
-                    /*
-                    console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
-                    return fetchLevels();
-                    */
-                case "Backslash":
-                    // For debugging purposes only, auto-completes the current level.
-                    /*
-                    if (gameState == "level" && levelState == "none") {
-                        mainPlayer.circ.x = mainGoal.x;
-                        mainPlayer.circ.y = mainGoal.y;
-                        coins.forEach(coin => {
-                            coin.animate();
-                        });
-                    }
-                    */
-                    return;
-            }
-        })
-        window.addEventListener('keyup', function (e) {
-            switch (e.code) {
-                case "KeyW": case "ArrowUp": return gameArea.keys[0]--;
-                case "KeyA": case "ArrowLeft": return gameArea.keys[1]--;
-                case "KeyS": case "ArrowDown": return gameArea.keys[2]--;
-                case "KeyD": case "ArrowRight": return gameArea.keys[3]--;
-            }
-        })
-        window.addEventListener("blur", () => {
-            gameArea.keys = [0, 0, 0, 0];
-        });
-    },
-    clear: function() {
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
+    });
 }
 
 // Plays sound, looking up string in soundEffects and setting volume.
@@ -356,81 +340,11 @@ function playSound(key, volume=1, interruptable=true) {
     }
 }
 
+// Plays all sounds at 0 volume to keep them loaded and ensure reduced latency from loading time.
 function refreshSounds() {
     const soundList = ["appear", "click", "coin", "enter", "hit", "ouch", "wink"];
     soundList.forEach((key) => {playSound(key, 0, false)});
     console.log("Sounds refreshed");
-}
-
-// Creates a rectangle component with x and y referring to center in preferred coordinate system.
-function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="red", offsetX=0, offsetY=0, range=0, time=2, delay=0) {
-    this.shape = "rect";
-    this.width = width;
-    this.height = height;
-    this.speed = speed;
-    this.angle = angle * Math.PI / 180;
-    this.range = range;
-    this.time = time;
-    this.delay = delay;
-    this.x = x;
-    this.y = y; 
-    this.color = color;
-    this.offsetX = offsetX;
-    this.offsetY = offsetY;
-    this.initialAngle = this.angle;
-    this.update = function() {
-        if (this.speed != 0) {
-            this.angle += this.speed * Math.PI / 180; 
-        } else if (this.range != 0) {
-            this.angle = this.initialAngle + this.range * Math.sin(
-                timer / this.time * Math.PI + (delay * 2 * Math.PI)) * Math.PI / 360;
-        }
-        this.angle = this.angle % (2 * Math.PI);
-        ctx.save();
-        ctx.translate(this.x + 480, 360 - this.y);      
-        ctx.rotate(this.angle);
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.width / -2 + offsetX, this.height / -2 - offsetY, this.width, this.height);
-        ctx.restore();    
-    }
-}
-
-// Creates a circle component with x and y referring to center in preferred coordinate system.
-function circ(radius=40, x=0, y=0, color="black") {
-    this.shape = "circ";
-    this.radius = radius;
-    this.x = x;
-    this.y = y;    
-    this.color = color;
-    this.update = function() {
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        centerFillCirc(this.x, this.y, this.radius);
-    }
-}
-
-// Creates a text component based on preferred coordinate system.
-function text(string="Hello!", x=0, y=0, size=36, color="black", align="center", font="Francois One") {
-    this.lines = string.split("\n");
-    this.x = x;
-    this.y = y; 
-    this.size = size;
-    this.color = color; 
-    this.align = align; 
-    this.font = font;
-    this.update = function() {
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.font = this.size + "px " + font + ", Tahoma, sans-serif";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = this.align;
-        let offset = (this.lines.length - 1) * (size * 1.25) / 2;
-        this.lines.forEach((line) => {
-            ctx.fillText(line, this.x + 480, 360 - this.y - offset);
-            offset -= (size * 1.25);
-        });
-    }
 }
 
 // Creates a player component, with circle and additional features such as movement and animation.
@@ -507,8 +421,8 @@ function player(x=0, y=0) {
         const levelCompleteStart = levelState == "complete" && timer - animStartTime < 0.25;
 
         // Eye shapes are prepared.
-        const circleEye = (offset) => centerFillCirc(middle + offset * fullScale, height, 3.2 * fullScale);
-        const lineEye = (offset, angle) => centerFillRect(middle + offset * fullScale, height, 9.6 * fullScale, 2 * fullScale, angle);
+        const circleEye = (offset) => drawCirc(middle + offset * fullScale, height, 3.2 * fullScale);
+        const lineEye = (offset, angle) => drawRect(middle + offset * fullScale, height, 9.6 * fullScale, 2 * fullScale, angle);
         const arcEye = (offset) => {
             ctx.beginPath();
             ctx.arc((middle + offset * fullScale) + 480, 360 - height - 1.6 * fullScale, 3.2 * fullScale, 0, Math.PI);
@@ -826,63 +740,6 @@ function coin(x=0, y=0) {
     };
 }
 
-// Fills a rectangle based on preferred coordinate system, and optional angle.
-function centerFillRect(x, y, width, height, angle = 0) {
-    ctx.beginPath();
-    if (angle != 0) {
-        ctx.save();
-        ctx.translate(x + 480, 360 - y);        
-        ctx.rotate(angle * Math.PI / 180);
-        ctx.fillRect(width / -2, height / -2, width, height);
-        ctx.restore();  
-    } else ctx.fillRect(x + 480 + width / -2, 360 - y + height / -2, width, height);
-}
-
-// Fills a circle based on preferred coordinate system.
-function centerFillCirc(x, y, radius) {
-    ctx.beginPath();
-    ctx.arc(x + 480, 360 - y, radius, 0, 2 * Math.PI);
-    ctx.fill();
-}
-
-// Returns the distance between two points, squared to prevent square root computation.
-function sqDist(x1, y1, x2, y2) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    return dx * dx + dy * dy;
-}
-
-// Returns true if mainPoint is inside mainRect.
-function inRect(mainPoint, mainRect) {
-    // Unrotate circle by negative angle of rectangle.
-    const dx = mainPoint.x - mainRect.x ;
-    const dy = mainPoint.y - mainRect.y;
-    const sin = Math.sin(mainRect.angle);
-    const cos = Math.cos(mainRect.angle);
-    const localX = cos * dx - sin * dy;
-    const localY = sin * dx + cos * dy;
-    const halfWidth = mainRect.width / 2;
-    const halfHeight = mainRect.height / 2;
-
-    // Find closest point on rectangle to mainPoint.
-    const closeX = Math.max(-halfWidth + mainRect.offsetX, Math.min(halfWidth + mainRect.offsetX, localX));
-    const closeY = Math.max(-halfHeight + mainRect.offsetY, Math.min(halfHeight + mainRect.offsetY, localY));
-
-    // Check if closest point is equal to mainPoint.
-    return localX == closeX && localY == closeY;
-}
-
-// Returns true if mainPoint is inside mainCirc.
-function inCirc(mainPoint, mainCirc) {
-    // Compare distance to radius.
-    return sqDist(mainPoint.x, mainPoint.y, mainCirc.x, mainCirc.y) <= mainCirc.radius * mainCirc.radius;;
-}
-
-// Returns true if mainPoint is in mainShape (rect or circ).
-function inShape(mainPoint, mainShape) {
-    return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
-}
-
 // Animates the FG fade.
 function animateFG(animStart, duration) {
     const elapsedTime = timer - animStart;
@@ -1042,7 +899,7 @@ function setupLevelSelect(notLoaded) {
     menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
     menuUI[32] = new text("", 0, 60, 18, "red", "center", "Paytone One");
     menuUI[33] = new text("Total Score: " + totalScore, 0, -225, 24, "red", "center", "Paytone One");
-    menuUI[34] = new text("More levels to come on my personal website!", 0, -152.5, 30, "red", "center", "Paytone One");
+    menuUI[34] = new text("Coming soon!", 210, -152.5, 30, "red", "center", "Paytone One");
 
     // Setup foreground flash if enabled, along with logo if not loaded.
     if (notLoaded) setupFGShapes();
@@ -1178,7 +1035,7 @@ function setupCompletion() {
 }
 
 // Updates the canvas every frame.
-function updateGameArea() {
+export function updateGameArea() {
     gameArea.clear();
     gameArea.scaleCanvas();
     timer = Date.now() / 1000 - timerStart;
@@ -1212,7 +1069,7 @@ function updateGameArea() {
     if (gameState == "none" && timer < 0.2) {
         ctx.beginPath();
         ctx.fillStyle = "black";
-        centerFillRect(0, 0, 960, 720);
+        drawRect(0, 0, 960, 720);
     }
 }
 
