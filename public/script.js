@@ -295,31 +295,19 @@ var gameArea = {
         window.addEventListener('keydown', function (e) {
             if (e.repeat) return;
             switch (e.code) {
-                case "KeyW":
-                case "ArrowUp":
-                    gameArea.keys[0]++;
-                    break;
-                case "KeyA":
-                case "ArrowLeft":
-                    gameArea.keys[1]++;
-                    break;
-                case "KeyS":
-                case "ArrowDown":
-                    gameArea.keys[2]++;
-                    break;
-                case "KeyD":
-                case "ArrowRight":
-                    gameArea.keys[3]++;
-                    break;
+                case "KeyW": case "ArrowUp": return gameArea.keys[0]++;
+                case "KeyA": case "ArrowLeft": return gameArea.keys[1]++;
+                case "KeyS": case "ArrowDown": return gameArea.keys[2]++;
+                case "KeyD": case "ArrowRight": return gameArea.keys[3]++;
                 case "KeyM":
                     gameSettings.allAudio = !gameSettings.allAudio;
-                    updateMute();
-                    break;
+                    return updateMute();
                 case "Backquote":
                     // For ease of level creation, prints mouse coordinates and re-fetches levels.
+                    /*
                     console.log("mouseCoords: " + mouseCoords.x + " " + mouseCoords.y);
-                    fetchLevels();
-                    break;
+                    return fetchLevels();
+                    */
                 case "Backslash":
                     // For debugging purposes only, auto-completes the current level.
                     /*
@@ -331,27 +319,15 @@ var gameArea = {
                         });
                     }
                     */
-                    break;
+                    return;
             }
         })
         window.addEventListener('keyup', function (e) {
             switch (e.code) {
-                case "KeyW":
-                case "ArrowUp":
-                    gameArea.keys[0]--;
-                    break;
-                case "KeyA":
-                case "ArrowLeft":
-                    gameArea.keys[1]--;
-                    break;
-                case "KeyS":
-                case "ArrowDown":
-                    gameArea.keys[2]--;
-                    break;
-                case "KeyD":
-                case "ArrowRight":
-                    gameArea.keys[3]--;
-                    break;
+                case "KeyW": case "ArrowUp": return gameArea.keys[0]--;
+                case "KeyA": case "ArrowLeft": return gameArea.keys[1]--;
+                case "KeyS": case "ArrowDown": return gameArea.keys[2]--;
+                case "KeyD": case "ArrowRight": return gameArea.keys[3]--;
             }
         })
         window.addEventListener("blur", () => {
@@ -635,22 +611,20 @@ function button(x=0, y=0, shape, text, id, squareSize) {
     this.status = "";
     this.update = function() {
         this.shape.angle = 3 * Math.cos(timer * Math.PI / 2 + this.offset) * Math.PI / 180;
-        switch (this.status) {
-            case "cyan":
-                this.squareColor = "#00ffff20";
-                break;
-            case "white":
-                this.squareColor = "#ffffff00";
-                this.shape.angle /= 2;
-                break;
-            default:
-                this.squareColor = "#ff000020";
-        }
-        this.squares[0].color = this.squares[1].color = this.squareColor;
+        if (this.status === "white") this.shape.angle /= 2;
+        this.squares[0].color = this.squares[1].color = (() => {
+            switch (this.status) {
+                case "cyan": return "#00ffff20";
+                case "white": return "#ffffff00";
+                default: return "#ff000020";
+            }
+        })();
+
         if (gameSettings.shapes) {
             this.squares[0].update();
             this.squares[1].update();
         }
+
         this.shape.update();
         this.text.update();
     }
@@ -660,32 +634,18 @@ function button(x=0, y=0, shape, text, id, squareSize) {
             this.shape.color = "#ff000020";
             return;
         }
-        if (mouseTarget != -2 && inShape(mouseCoords, this.shape)){
-            mouseTarget = this.id;
+
+        const mousedOver = mouseTarget != -2 && inShape(mouseCoords, this.shape);
+
+        if (mousedOver) mouseTarget = this.id;
+        this.text.color = mousedOver ? "#000000c0" : "black";
+        this.shape.color = (() => {
             switch (this.status) {
-                case "cyan":
-                    this.shape.color = "#80ffff";
-                    break;
-                case "white":
-                    this.shape.color = "#ffffffdf";
-                    break;
-                default:
-                    this.shape.color = "#ff4040";
+                case "cyan": return mousedOver ? "#80ffff" : "cyan";
+                case "white": return mousedOver ? "#ffffffdf" : "#ffffffbf";
+                default: return mousedOver ? "#ff4040" : "red";
             }
-            this.text.color = "#000000c0";
-        } else {
-            switch (this.status) {
-                case "cyan":
-                    this.shape.color = "cyan";
-                    break;
-                case "white":
-                    this.shape.color = "#ffffffbf";
-                    break;
-                default:
-                    this.shape.color = "red";
-            }
-            this.text.color = "black";
-        }
+        })();
     }
     this.animate = function(duration) {
         // Animate a button fading out as it is clicked.
@@ -693,32 +653,28 @@ function button(x=0, y=0, shape, text, id, squareSize) {
 
         // Return false when animation is over.
         if (elapsedAmount > 1) return false;
-
         this.animating = true;
 
         // The button only animates if fades are enabled to begin with.
         if (gameSettings.fades) {
             this.scale = Math.max(0, 1 - elapsedAmount * elapsedAmount * 0.25);
-            const colorVal = 255 * (1 - elapsedAmount * elapsedAmount);
+            const alpha = 1 - elapsedAmount * elapsedAmount, colorVal = 255 * alpha;
 
             // This prevents the decorative squares from being drawn twice on the same frame.
             if (elapsedAmount == 0) return true;
             
             // Fade by controlling color directly.
-            switch (this.status) {
-                case "cyan":
-                    this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
-                    break;
-                case "white":
-                    this.shape.color = `rgba(255, 255, 255, ${colorVal / 255})`;
-                    break;
-                default:
-                    this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
-            }
-            this.text.color = `rgba(0, 0, 0, ${colorVal / 255})`;
+            this.shape.color = (() => {
+                switch (this.status) {
+                    case "cyan": return `rgba(${colorVal}, 255, 255, ${alpha})`;
+                    case "white": return `rgba(255, 255, 255, ${alpha})`;
+                    default: return `rgba(255, ${colorVal}, ${colorVal}, ${alpha})`;
+                }
+            })();
+            this.text.color = `rgba(0, 0, 0, ${alpha})`;
 
             // Update button visuals to match scale property.
-            this.setScale()
+            this.setScale();
         }
 
         return true;
@@ -1230,19 +1186,14 @@ function updateGameArea() {
 
     // Gameplay logic will only run during a level.
     switch (gameState) {
-        case "menu":
-        case "select":
-        case "settings":
-        case "credits":
-        case "complete":
-            menuLogic();
-            break;
         case "level":
             levelLogic();
             // fall through
         case "none":
             singleButtonScreen();
             break;
+        default:
+            menuLogic();
     }
 
     // Foreground shapes, if any, are always drawn last. The last shape is delegated to fades.
@@ -1313,37 +1264,36 @@ function menuLogic() {
                 if (!gameSettings.fades || ( buttonAnimDone && (settingsToggle || FGAnimDone))) {
                     if (gameState == "menu") {
                         // The buttons on the main menu correspond to level select, settings, and credits.
-                        switch (element.id) {
-                            case 0: 
-                                setupLevelSelect(false);
-                                break;
-                            case 1:
-                                setupSettings(false);
-                                break;
-                            case 2:
-                                setupCredits();
-                                break;
-                        }
+                        (() => {
+                            switch (element.id) {
+                                case 0: return setupLevelSelect(false);
+                                case 1: return setupSettings(false);
+                                case 2: return setupCredits();
+                            }
+                        })();
                     } else if (gameState == "select") {
                         // The buttons on the level select correspond to levels and the main menu.
-                        if (element.id == 30) {
-                            setupMainMenu(false);
-                        } else {
-                            currentLevel = element.id + 1;
-                            loadLevel("Level " + currentLevel, true);
-                        }
+                        (() => {
+                            switch (element.id) {
+                                case 30: return setupMainMenu(false);
+                                default: 
+                                    currentLevel = element.id + 1;
+                                    return loadLevel("Level " + currentLevel, true);
+                            }
+                        })();
                     } else if (gameState == "settings") {
                         // The buttons on the settings menu largely correspond to toggle-able settings.
                         // The reset data button directs to a special level acting as a confirmation
                         // screen, and the menu buttton is self-explanatory.
-                        if (element.id == 4) {
-                            currentLevel = -1;
-                            loadLevel("Reset Data", true);
-                        } else if (element.id == 5) {
-                            setupMainMenu(false);
-                        } else {
-                            element.reappear(0.125);
-                        }
+                        (() => {
+                            switch (element.id) {
+                                case 4: 
+                                    currentLevel = -1;
+                                    return loadLevel("Reset Data", true);
+                                case 5: return setupMainMenu(false);
+                                default: return element.reappear(0.125);
+                            }
+                        })();
                     } else setupMainMenu(false);
                 }
             } else {
