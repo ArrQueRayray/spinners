@@ -42,7 +42,7 @@ export function setupMouse() {
 
         if (Menus.mouseTarget > -1) {
             // If interacting with the sound button, the setting must be immediately updated.
-            if (State.gameState == "settings" && Menus.mouseTarget == 1) {
+            if (State.gameState === "settings" && Menus.mouseTarget === 1) {
                 if (!State.gameSettings.allAudio) {
                     State.gameSettings.allAudio = true;
                     State.gameSettings.music = false;
@@ -87,7 +87,7 @@ export function setupKeys() {
                 return fetchLevels();
             case "Backslash":
                 // For debugging purposes only, auto-completes the current level.
-                if (State.gameState == "level" && State.levelState == "none") {
+                if (State.gameState === "level" && State.levelState === "none") {
                     State.mainPlayer.circ.x = State.mainGoal.x;
                     State.mainPlayer.circ.y = State.mainGoal.y;
                     State.coins.forEach(coin => {

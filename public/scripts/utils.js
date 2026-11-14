@@ -18,9 +18,9 @@ export function rect(width=100, height=100, speed=0, x=0, y=0, angle=0, color="r
     this.offsetY = offsetY;
     this.initialAngle = this.angle;
     this.update = () => {
-        if (this.speed != 0) {
+        if (this.speed !== 0) {
             this.angle += this.speed * Math.PI / 180; 
-        } else if (this.range != 0) {
+        } else if (this.range !== 0) {
             this.angle = this.initialAngle + this.range * Math.sin(
                 Timer.time / this.time * Math.PI + (delay * 2 * Math.PI)) * Math.PI / 360;
         }
@@ -75,7 +75,7 @@ export function text(string="Hello!", x=0, y=0, size=36, color="black", align="c
 // Fills a rectangle based on preferred coordinate system, and optional angle.
 export function drawRect(x, y, width, height, angle = 0) {
     ctx.beginPath();
-    if (angle != 0) {
+    if (angle !== 0) {
         ctx.save();
         ctx.translate(x + 480, 360 - y);        
         ctx.rotate(angle * Math.PI / 180);
@@ -116,7 +116,7 @@ function inRect(mainPoint, mainRect) {
     const closeY = Math.max(-halfHeight + mainRect.offsetY, Math.min(halfHeight + mainRect.offsetY, localY));
 
     // Check if closest point is equal to mainPoint.
-    return localX == closeX && localY == closeY;
+    return localX === closeX && localY === closeY;
 }
 
 // Returns true if mainPoint is inside mainCirc.
@@ -127,5 +127,5 @@ function inCirc(mainPoint, mainCirc) {
 
 // Returns true if mainPoint is in mainShape (rect or circ).
 export function inShape(mainPoint, mainShape) {
-    return (mainShape.shape == "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
+    return (mainShape.shape === "circ") ? inCirc(mainPoint, mainShape) : inRect(mainPoint, mainShape);
 }

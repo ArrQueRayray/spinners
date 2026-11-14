@@ -48,12 +48,12 @@ export function button(x=0, y=0, shape, text, id, squareSize) {
     }
     this.check = function() {
         // Check the button's status and if the mouse is hovering over it.
-        if (this.status == "disabled") {
+        if (this.status === "disabled") {
             this.shape.color = "#ff000020";
             return;
         }
 
-        const mousedOver = mouseTarget != -2 && inShape(mouseCoords, this.shape);
+        const mousedOver = mouseTarget !== -2 && inShape(mouseCoords, this.shape);
 
         if (mousedOver) mouseTarget = this.id;
         this.text.color = mousedOver ? "#000000c0" : "black";
@@ -79,7 +79,7 @@ export function button(x=0, y=0, shape, text, id, squareSize) {
             const alpha = 1 - elapsedAmount * elapsedAmount, colorVal = 255 * alpha;
 
             // This prevents the decorative squares from being drawn twice on the same frame.
-            if (elapsedAmount == 0) return true;
+            if (elapsedAmount === 0) return true;
             
             // Fade by controlling color directly.
             this.shape.color = (() => {
@@ -145,7 +145,7 @@ export function button(x=0, y=0, shape, text, id, squareSize) {
         const colorVal = 255 * elapsedAmount * elapsedAmount;
         
         // Fade by controlling color directly.
-        if (this.status == "cyan") 
+        if (this.status === "cyan") 
             this.shape.color = `rgba(${colorVal}, 255, 255, ${colorVal / 255})`;
         else
             this.shape.color = `rgba(255, ${colorVal}, ${colorVal}, ${colorVal / 255})`;
@@ -399,7 +399,7 @@ export function updateMute() {
     }
 
     // This reflects the update in button status if on the settings menu.
-    if (State.gameState == "settings") {
+    if (State.gameState === "settings") {
         updateSettings(State.gameSettings.allAudio && State.gameSettings.music, 0);
         updateSettings(State.gameSettings.allAudio && State.gameSettings.sound, 1);
     }

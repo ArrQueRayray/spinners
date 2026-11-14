@@ -43,8 +43,8 @@ export function player(x=0, y=0) {
         }
 
         // If max speed is exceeded, this clamps the speed and keeps it in range.
-        if (!this.controllable || !!gameArea.keys[1] == !!gameArea.keys[3]) this.speedX = limit(this.speedX);
-        if (!this.controllable || !!gameArea.keys[0] == !!gameArea.keys[2]) this.speedY = limit(this.speedY);
+        if (!this.controllable || !!gameArea.keys[1] === !!gameArea.keys[3]) this.speedX = limit(this.speedX);
+        if (!this.controllable || !!gameArea.keys[0] === !!gameArea.keys[2]) this.speedY = limit(this.speedY);
         this.speedX = Math.min(Math.max(this.speedX, -1 * maxSpeed), maxSpeed);
         this.speedY = Math.min(Math.max(this.speedY, -1 * maxSpeed), maxSpeed);
 
@@ -69,12 +69,12 @@ export function player(x=0, y=0) {
 
         // The coordinates of the midpoint of the eyes is calculated along with a nod animation.
         const middle = State.mainPlayer.circ.x + State.mainPlayer.speedX * 1.333;
-        const nod = Number(State.levelState != "failed") * 2 * fullScale * Math.sin(Timer.time * Math.PI * 1.5);
+        const nod = Number(State.levelState !== "failed") * 2 * fullScale * Math.sin(Timer.time * Math.PI * 1.5);
         const height = State.mainPlayer.circ.y + (3 * fullScale) + nod + State.mainPlayer.speedY * 1.333;
 
         // A blink timer is used to either draw eyes where they are located.
         const notBlinking = Timer.time < State.mainPlayer.blink || Timer.time > State.mainPlayer.blink + 0.06;
-        const levelCompleteStart = State.levelState == "complete" && Timer.time - Timer.animStart < 0.25;
+        const levelCompleteStart = State.levelState === "complete" && Timer.time - Timer.animStart < 0.25;
 
         // Eye shapes are prepared.
         const circleEye = (offset) => drawCirc(middle + offset * fullScale, height, 3.2 * fullScale);
@@ -87,19 +87,19 @@ export function player(x=0, y=0) {
             ctx.stroke();
         }
 
-        if (notBlinking && (State.levelState == "none" || levelCompleteStart)) {
+        if (notBlinking && (State.levelState === "none" || levelCompleteStart)) {
             // After a blink, the blink time is reset, with circle eyes drawn.
             if (Timer.time > State.mainPlayer.blink) State.mainPlayer.blink += 3.1 + 2 * Math.random();
             circleEye(-5.6);
             circleEye(5.6);
         } else {
-            if (State.levelState == "failed") {
+            if (State.levelState === "failed") {
                 // Draw X-shaped eyes.
                 lineEye(-5.6, -45);
                 lineEye(-5.6, 45);
                 lineEye(5.6, -45);
                 lineEye(5.6, 45);
-            } else if (State.levelState == "complete") {
+            } else if (State.levelState === "complete") {
                 // Draw one eye winking.
                 circleEye(-5.6);
                 arcEye(5.6);
@@ -168,8 +168,8 @@ export function goal(x=0, y=0) {
         if (State.coinCount > 0) return; // If there are uncollected coins, don't appear.
 
         // If a last coin is collected, play a sound and appear by enlarging.
-        if (State.levelState != "complete") {
-            if (this.goalScale == 0.001) {
+        if (State.levelState !== "complete") {
+            if (this.goalScale === 0.001) {
                 this.animating = true;
                 this.animStart = Timer.time;
                 Audio.playSound("appear", 0.5);
@@ -256,4 +256,45 @@ export function coin(x=0, y=0) {
         const range = 32 * State.gameScale;
         return sqGoalDist < range * range;
     };
+}
+
+// Animate player being sucked into goal, returning true 0.5 seconds after animation is complete.
+export function winAnim() {
+    const dx = State.mainGoal.rects[0].x - State.mainPlayer.circ.x;
+    const dy = State.mainGoal.rects[0].y - State.mainPlayer.circ.y;
+    const elapsedTime = Timer.time - Timer.animStart;
+    if (elapsedTime < 0.75) {
+        State.mainPlayer.circ.x += dx * elapsedTime * 0.3;
+        State.mainPlayer.circ.y += dy * elapsedTime * 0.3;
+        State.mainPlayer.playerScale = 7.7 * Math.sin((elapsedTime / 0.75) + 1.2) - 6.2;
+        State.mainGoal.goalScale = 2 * Math.sin((elapsedTime / 0.75) * 5 * Math.PI / 6 + Math.PI / 6);
+        return false;
+    } else {
+        if (Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart === 0) {
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = Timer.time;
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.5 : 0;
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = State.currentLevel === -1 ? "black" : "white";
+        }
+        State.gameScale = 0;
+        State.mainGoal.goalScale = 0;
+        return elapsedTime >= (State.gameSettings.fades ? 1.25 : 0.75);
+    }
+}
+
+// Animate player dying, returning true 0.5 seconds after animation is complete.
+export function loseAnim() {
+    const elapsedTime = Timer.time - Timer.animStart;
+    if (elapsedTime < 0.5) {
+        State.mainPlayer.circ.color = `rgba(0, 255, 255, ${1 - elapsedTime / 0.5})`;
+        State.mainPlayer.playerScale = 7.7 * Math.sin((elapsedTime / 0.5) + 1.2) - 6.2;
+        return false;
+    } else {
+        if (Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart === 0) {
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = Timer.time;
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.25 : 0;
+            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = "red";
+        }
+        State.mainPlayer.playerScale = 0;
+        return elapsedTime >= (State.gameSettings.fades ? 0.75 : 0.5);
+    }
 }

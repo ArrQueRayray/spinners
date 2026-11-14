@@ -1,13 +1,13 @@
 // Note: The top-left corner in the preferred coordinate system is (-480, 360).
 "use strict";
 
-// Import variables and functions from JS files.
+// Import variables and functions from JS files; a lot.
 import { gameArea, ctx, setupMouse, setupKeys } from './scripts/canvas.js';
 import { rect, circ, text, drawRect } from './scripts/utils.js';
 import * as Audio from './scripts/audio.js';
 import * as Menus from './scripts/menus.js';
 import { State, Timer, Shapes } from './scripts/states.js';
-import { player, goal, coin } from './scripts/entities.js';
+import { player, goal, coin, winAnim, loseAnim } from './scripts/entities.js';
 
 // Fetch levels and audio.
 let levels = {};
@@ -25,7 +25,7 @@ if (Number.isNaN(State.maxLevel) || State.maxLevel < 1 || State.maxLevel > State
 // Retrieve settings data.
 ["music", "sound", "shapes", "fades"].forEach(setting => {
     if (localStorage.getItem(setting))
-        State.gameSettings[setting] = localStorage.getItem(setting) == "true";
+        State.gameSettings[setting] = localStorage.getItem(setting) === "true";
 });
 
 startGame(true);
@@ -73,7 +73,7 @@ function loadLevel(level, firstLoad) {
 
         // If a first level load, setup the menu button.
         if (firstLoad) {
-            if (State.currentLevel == -1) Shapes.menuUI = [new Menus.button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
+            if (State.currentLevel === -1) Shapes.menuUI = [new Menus.button(480, -360, new rect(375, 80), new text("No, take me back", -3.875, 0.8, 24), 0, 80)];
             else {
                 Shapes.menuUI = [new Menus.button(480, -360, new rect(275, 80), new text("Level Select", -2.75, 0.8, 24), 0, 80),
                     new Menus.button(-480, 360, new rect(245, 140), new text("Score: 999\nBest: N/A", 0.25, -1.4, 24), 1, 80)];
@@ -87,7 +87,7 @@ function loadLevel(level, firstLoad) {
 
     // Retrieve and update high State.score.
     State.highScore = Number(localStorage.getItem("score" + State.currentLevel));
-    if (State.currentLevel != -1) Shapes.menuUI[1].text.lines[1] = "Best: " + State.highScore;
+    if (State.currentLevel !== -1) Shapes.menuUI[1].text.lines[1] = "Best: " + State.highScore;
 
     // Get desired level from levels.json if possible.
     try {
@@ -103,7 +103,7 @@ function loadLevel(level, firstLoad) {
 
         // All planned levels have a solid red background, and some may have text which goes on the foreground.
         const flash = Shapes.FGShapes[Shapes.FGShapes.length - 1];
-        const levelString = level != null ? `${level}: ${loadedLevel.name}` : loadedLevel.name;
+        const levelString = level !== null ? `${level}: ${loadedLevel.name}` : loadedLevel.name;
         const levelTitle = new text(levelString, -475, -345, 24, "black", "left");
         const levelText = (loadedLevel.text ?? []).map((obj) => {
             const { string, x, y, size = 36, color = "black", align = "center" } = obj;
@@ -129,7 +129,7 @@ function loadLevel(level, firstLoad) {
         // Obstacles and safe areas are stored in arrays to allow for drawing and checking multiple shapes at once.
 
         const shapeSetter = function(obj, mainColor) {
-            if (obj.type == "rect") {
+            if (obj.type === "rect") {
                 const { width = 100, height = 100, speed = 0, x = 0, y = 0, angle = 0, color = mainColor,
                     offset: { x: offsetX = 0, y: offsetY = 0 } = {}, range = 0, time = 1, delay = 0 } = obj;
                 return new rect(width, height, speed, x, y, angle, color,
@@ -183,14 +183,14 @@ export function updateGameArea() {
         if (element?.transition) {
             if (Timer.time < element.animStart + element.duration) {
                 const elapsedAmount = (Timer.time - element.animStart) / element.duration;
-                ctx.globalAlpha = (element.animStart == 0) ? 1 - elapsedAmount : elapsedAmount;
+                ctx.globalAlpha = (element.animStart === 0) ? 1 - elapsedAmount : elapsedAmount;
                 element.update();
                 ctx.globalAlpha = 1;
             }
         }
     });
 
-    if (State.gameState == "none" && Timer.time < 0.2) {
+    if (State.gameState === "none" && Timer.time < 0.2) {
         ctx.beginPath();
         ctx.fillStyle = "black";
         drawRect(0, 0, 960, 720);
@@ -200,7 +200,7 @@ export function updateGameArea() {
 // Handles logic for single-buttoned screens such as the start or levels.
 function oneButtonLogic() {
     // Background shapes, if enabled, are always drawn first on the start screen.
-    if (State.gameState == "none") {
+    if (State.gameState === "none") {
         if (State.gameSettings.shapes) Shapes.BGShapes.forEach(element => {element.update()});
     }
 
@@ -213,17 +213,17 @@ function oneButtonLogic() {
         if (!State.gameSettings.fades || (buttonAnimDone && FGAnimDone)) {
             // Start music and switch to main menu.
             Shapes.BGShapes = [];
-            if (State.gameState == "none") {
+            if (State.gameState === "none") {
                 Audio.gameMusic.play();
                 Menus.setupMainMenu(true);
             }
-            else if (State.currentLevel == -1) Menus.setupSettings(true);
+            else if (State.currentLevel === -1) Menus.setupSettings(true);
             else Menus.setupLevelSelect(true);
         }
     } else {
-        if (Menus.mouseTarget != -2) Menus.clearTargets();
+        if (Menus.mouseTarget !== -2) Menus.clearTargets();
         if (typeof Shapes.menuUI[0].update === "function") {
-            if (Menus.mainMenuVisited || State.gameState != "none" || Timer.time > 1) {
+            if (Menus.mainMenuVisited || State.gameState !== "none" || Timer.time > 1) {
                 Shapes.menuUI[0].update();
                 
                 // Check if mouse is hovering over button.
@@ -238,7 +238,7 @@ function oneButtonLogic() {
     }
 
     // On normal levels, update score visually.
-    if (State.gameState == "level" && State.currentLevel != -1) {
+    if (State.gameState === "level" && State.currentLevel !== -1) {
         Shapes.menuUI[1].update();
     }
 
@@ -252,7 +252,7 @@ function menuLogic() {
     if (State.gameSettings.shapes) Shapes.BGShapes.forEach(element => {element.update()});
 
     // Menu buttons are drawn, only allowing for clicks if Menus.mouseTarget is above -2.
-    if (Menus.mouseTarget != -2) {
+    if (Menus.mouseTarget !== -2) {
         Menus.clearTargets();
         Shapes.menuUI.forEach(element => { 
             element.update();
@@ -261,9 +261,9 @@ function menuLogic() {
             if (typeof element.check === "function") element.check();
         });
         // On the level select, hovering over an unlocked level brings up its name.
-        if (State.gameState == "select") {
+        if (State.gameState === "select") {
             Shapes.menuUI[31].lines = Shapes.menuUI[32].lines = [""];
-            if (Menus.mouseTarget > -1 && Menus.mouseTarget != 30) {
+            if (Menus.mouseTarget > -1 && Menus.mouseTarget !== 30) {
                 const levelString = "Level " + (Menus.mouseTarget + 1);
                 if (Object.hasOwn(levels, levelString) && Object.hasOwn(levels[levelString], "name")) {
                     Shapes.menuUI[31].lines = [levels[levelString].name];
@@ -276,11 +276,11 @@ function menuLogic() {
         // Once a button is clicked, the buttons continue to update as normal except for the clicked button,
         // which animates alongside a fade before performng the button behavior.
         Shapes.menuUI.forEach(element => { 
-            if (element.id == Menus.animTarget) {
+            if (element.id === Menus.animTarget) {
                 Shapes.FGShapes[Shapes.FGShapes.length - 1].color = "black";
                 // This handles button animations. Most buttons occur with a screen transition, with the
                 // exception of some buttons in the settings menu, which also have no fadeout.
-                const settingsToggle = State.gameState == "settings" && Menus.animTarget < 4;
+                const settingsToggle = State.gameState === "settings" && Menus.animTarget < 4;
                 const buttonAnimDone = !element.animate(settingsToggle ? 0 : 0.25);
                 const FGAnimDone = !settingsToggle && !Menus.animateFG(element.animStart, 0.5);
 
@@ -292,7 +292,7 @@ function menuLogic() {
 
                 // Checks are performed to ensure the animations have completed.
                 if (!State.gameSettings.fades || ( buttonAnimDone && (settingsToggle || FGAnimDone))) {
-                    if (State.gameState == "menu") {
+                    if (State.gameState === "menu") {
                         // The buttons on the main menu correspond to level select, settings, and credits.
                         (() => {
                             switch (element.id) {
@@ -301,7 +301,7 @@ function menuLogic() {
                                 case 2: return Menus.setupCredits();
                             }
                         })();
-                    } else if (State.gameState == "select") {
+                    } else if (State.gameState === "select") {
                         // The buttons on the level select correspond to levels and the main menu.
                         (() => {
                             switch (element.id) {
@@ -311,7 +311,7 @@ function menuLogic() {
                                     return loadLevel("Level " + State.currentLevel, true);
                             }
                         })();
-                    } else if (State.gameState == "settings") {
+                    } else if (State.gameState === "settings") {
                         // The buttons on the settings menu largely correspond to toggle-able settings.
                         // The reset data button directs to a special level acting as a confirmation
                         // screen, and the menu buttton is self-explanatory.
@@ -327,7 +327,7 @@ function menuLogic() {
                     } else Menus.setupMainMenu(false);
                 }
             } else {
-                if (element.id != Menus.animTarget) element.update();
+                if (element.id !== Menus.animTarget) element.update();
             }
         });
     }
@@ -360,7 +360,7 @@ function levelLogic() {
     State.mainPlayer.update();
 
     // If all coins are collected and player is close enough to the goal, the level is officially completed.
-    if (State.coinCount == 0 && State.mainGoal.isClose() && State.levelState == "none") {
+    if (State.coinCount === 0 && State.mainGoal.isClose() && State.levelState === "none") {
         State.mainPlayer.controllable = false; 
         Menus.blockTargets();
         State.levelState = "complete";
@@ -370,7 +370,7 @@ function levelLogic() {
     }
 
     // If player is no longer alive, the level is failed.
-    if (!State.mainPlayer.isAlive() && State.levelState == "none") {
+    if (!State.mainPlayer.isAlive() && State.levelState === "none") {
         State.mainPlayer.controllable = false; 
         Menus.blockTargets();
         State.levelState = "failed";
@@ -383,21 +383,21 @@ function levelLogic() {
     // or the next level is loaded. Score is updated otherwise.
     switch (State.levelState) {
         case "complete":
-            if (State.currentLevel == -1 || State.currentLevel == State.lastLevel) {
+            if (State.currentLevel === -1 || State.currentLevel === State.lastLevel) {
                 // For the "reset data" level or last level, remove button and stop music.
                 Shapes.menuUI[0] = [new circ(0)];
                 Audio.gameMusic.pause();
                 Audio.gameMusic.currentTime = 0;
             }
             // If applicable, save State.score, or update if it's higher.
-            if (State.currentLevel != -1 && (!State.highScore || Number(State.highScore) < State.score)) {
+            if (State.currentLevel !== -1 && (!State.highScore || Number(State.highScore) < State.score)) {
                 Shapes.menuUI[1].text.lines[1] = ["Best: " + State.score];
                 localStorage.setItem("score" + State.currentLevel, String(State.score));
             }
-            if (levelCompleteAnimation()) {
-                if (State.currentLevel == -1) {
+            if (winAnim()) {
+                if (State.currentLevel === -1) {
                     // For the "reset data" level, reset progression and State.scores, save to local storage, and restart game.
-                    if (State.gameState != "reset") {
+                    if (State.gameState !== "reset") {
                         State.maxLevel = 1;
                         localStorage.setItem("maxLevel", State.maxLevel);
                         for (let i = 1; i <= State.lastLevel; i++) {
@@ -410,11 +410,11 @@ function levelLogic() {
                     }
                 } else {
                     // If applicable, unlock next level and save to local storage.
-                    if (State.currentLevel == State.maxLevel) {
+                    if (State.currentLevel === State.maxLevel) {
                         State.maxLevel++;
                         localStorage.setItem("maxLevel", State.maxLevel);
                     }
-                    if (State.currentLevel == State.lastLevel) {
+                    if (State.currentLevel === State.lastLevel) {
                         State.gameState = "complete";
                         Shapes.FGShapes = [Shapes.FGShapes[Shapes.FGShapes.length - 1]];
                         if (State.gameSettings.fades) Shapes.FGShapes[0].update();
@@ -424,53 +424,12 @@ function levelLogic() {
             }
             break;
         case "failed":
-            if (levelFailedAnimation()) loadLevel("Level " + State.currentLevel, false);
+            if (loseAnim()) loadLevel("Level " + State.currentLevel, false);
             break;
         default:
-            if (State.currentLevel != -1) {
+            if (State.currentLevel !== -1) {
                 State.score = Math.max(0, Math.floor(1000 - Timer.time * 10));
                 Shapes.menuUI[1].text.lines[0] = ["Score: " + State.score];
             }
-    }
-}
-
-// Animate player being sucked into goal, returning true 0.5 seconds after animation is complete.
-function levelCompleteAnimation() {
-    const dx = State.mainGoal.rects[0].x - State.mainPlayer.circ.x;
-    const dy = State.mainGoal.rects[0].y - State.mainPlayer.circ.y;
-    const elapsedTime = Timer.time - Timer.animStart;
-    if (elapsedTime < 0.75) {
-        State.mainPlayer.circ.x += dx * elapsedTime * 0.3;
-        State.mainPlayer.circ.y += dy * elapsedTime * 0.3;
-        State.mainPlayer.playerScale = 7.7 * Math.sin((elapsedTime / 0.75) + 1.2) - 6.2;
-        State.mainGoal.goalScale = 2 * Math.sin((elapsedTime / 0.75) * 5 * Math.PI / 6 + Math.PI / 6);
-        return false;
-    } else {
-        if (Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart == 0) {
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = Timer.time;
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.5 : 0;
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = State.currentLevel == -1 ? "black" : "white";
-        }
-        State.gameScale = 0;
-        State.mainGoal.goalScale = 0;
-        return elapsedTime >= (State.gameSettings.fades ? 1.25 : 0.75);
-    }
-}
-
-// Animate player dying, returning true 0.5 seconds after animation is complete.
-function levelFailedAnimation() {
-    const elapsedTime = Timer.time - Timer.animStart;
-    if (elapsedTime < 0.5) {
-        State.mainPlayer.circ.color = `rgba(0, 255, 255, ${1 - elapsedTime / 0.5})`;
-        State.mainPlayer.playerScale = 7.7 * Math.sin((elapsedTime / 0.5) + 1.2) - 6.2;
-        return false;
-    } else {
-        if (Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart == 0) {
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].animStart = Timer.time;
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].duration = State.gameSettings.fades ? 0.25 : 0;
-            Shapes.FGShapes[Shapes.FGShapes.length - 1].color = "red";
-        }
-        State.mainPlayer.playerScale = 0;
-        return elapsedTime >= (State.gameSettings.fades ? 0.75 : 0.5);
     }
 }

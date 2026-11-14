@@ -36,7 +36,7 @@ export function playSound(key, volume=1, interruptable=true) {
     if (!State.gameSettings.allAudio || !State.gameSettings.sound) volume = 0;
     try {
         const soundCheck = soundEffects[key];
-        if (interruptable || (soundCheck.paused || soundCheck.ended || soundEffects[key].currentTime == 0)) {
+        if (interruptable || (soundCheck.paused || soundCheck.ended || soundEffects[key].currentTime === 0)) {
             soundEffects[key].currentTime = 0;
             soundEffects[key].volume = volume;
             soundEffects[key].play();
