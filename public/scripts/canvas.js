@@ -7,7 +7,7 @@ import { State, Timer, Shapes } from './states.js';
 export let mouseCoords = {x: 999, y: 999}, ctx;
 let refreshInterval;
 
-export var gameArea = {
+export let gameArea = {
     canvas: document.createElement("canvas"),
     start: function() {
         this.canvas.width = 960;

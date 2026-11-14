@@ -1,5 +1,5 @@
-import { gameArea } from './canvas.js';
-import { mouseCoords } from './canvas.js';
+import { version } from '../script.js';
+import { gameArea, mouseCoords } from './canvas.js';
 import { rect, text, inShape } from './utils.js';
 import * as Audio from './audio.js';
 import { State, Timer, Shapes } from './states.js';
@@ -327,7 +327,8 @@ export function setupLevelSelect(notLoaded) {
     Shapes.menuUI[31] = new text("", 0, 87.5, 30, "red", "center", "Paytone One");
     Shapes.menuUI[32] = new text("", 0, 60, 18, "red", "center", "Paytone One");
     Shapes.menuUI[33] = new text("Total Score: " + totalScore, 0, -225, 24, "red", "center", "Paytone One");
-    Shapes.menuUI[34] = new text("Coming soon!", 210, -152.5, 30, "red", "center", "Paytone One");
+    Shapes.menuUI[34] = new text("More levels coming soon in future updates!", 0, -152.5, 30, "red", "center", "Paytone One");
+    // Shapes.menuUI[34] = new text("Coming soon!", 210, -152.5, 30, "red", "center", "Paytone One");
 
     // Setup foreground flash if enabled, along with logo if not loaded.
     if (notLoaded) setupFGShapes();
@@ -357,7 +358,7 @@ export function setupSettings(notLoaded) {
         new text("Game Sound", -125, -50, 36, "red", "right", "Paytone One"),
         new text("BG Shapes", -125, -130, 36, "red", "right", "Paytone One"),
         new text("Screen Fades", 275, 30, 36, "red", "right", "Paytone One"),
-        new text("v1.0", -475, -345, 24, "red", "left", "Paytone One")
+        new text(`v${version}`, -475, -345, 24, "red", "left", "Paytone One")
     ];
 
     // Update button states.

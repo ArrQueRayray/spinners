@@ -15,8 +15,7 @@ body {
 
 canvas {
     aspect-ratio: 4 / 3;
-    border: 6px dashed;
-    border-color: black;
+    border: 6px dashed black;
     background-color: black;
     width: stretch;
     height: auto;

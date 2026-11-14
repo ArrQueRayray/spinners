@@ -9,7 +9,7 @@ import { State, Timer, Shapes } from './scripts/states.js';
 import { player, goal, coin, winAnim, loseAnim } from './scripts/entities.js';
 
 // Fetch levels and audio.
-let levels = await fetchLevels();
+export let version = "1.0.1", levels = await fetchLevels();
 Audio.fetchAudio();
 
 // Retrieve save data from local storage if available.
@@ -24,21 +24,23 @@ startGame(true);
 // Starts game by setting up shapes, play button, and game area.
 function startGame(firstLoad) {
     State.gameState = "none", State.levelState = "none";
-    Timer.reset;
+    Timer.reset();
     Menus.clearTargets();
     Menus.setupBGShapes(true);
 
     Shapes.FGShapes = [new rect(960, 720, 0, 0, 0, 0, "black")];
     Shapes.FGShapes[0].transition = true;
+    Shapes.FGShapes[0].animStart = 0;
+    Shapes.FGShapes[0].duration = 1;
     Shapes.menuUI = [new Menus.button(0, 0, new rect(360, 200), new text("Play", 0, 0, 84), 0, 240)];
 
     if (firstLoad) {
         setupMouse();
         setupKeys();
         gameArea.start();
-        gameArea.canvas.style["transition"] = `border-color ${Number(State.gameSettings.fades) / 4}s`;
     }
 
+    gameArea.canvas.style["transition"] = `border-color ${Number(State.gameSettings.fades) / 4}s`;
     gameArea.canvas.style["border-color"] = "#800"; 
 }
 
@@ -178,7 +180,7 @@ export function updateGameArea() {
             if (Timer.time < element.animStart + element.duration) {
                 const elapsedAmount = (Timer.time - element.animStart) / element.duration;
                 ctx.globalAlpha = (element.animStart === 0) ? 1 - elapsedAmount : elapsedAmount;
-                element.update();
+                if (State.gameSettings.fades) element.update();
                 ctx.globalAlpha = 1;
 
                 if (State.gameSettings.fades) gameArea.canvas.style["transition"] = `border-color ${element.duration * 2}s`;
@@ -191,7 +193,7 @@ export function updateGameArea() {
         }
     });
 
-    if (State.gameState === "none" && Timer.time < 0.2) {
+    if (State.gameState === "none" && Timer.time < 0.2 && State.gameSettings.fades) {
         ctx.beginPath();
         ctx.fillStyle = "black";
         drawRect(0, 0, 960, 720);
